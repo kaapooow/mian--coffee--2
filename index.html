@@ -205,7 +205,9 @@ function bagState(p) {
   cy += Math.sin(d * Math.PI) * 10;
   const cx = track(p, [[T.slide[0], 764], [T.slide[1], 411]]);
   const f = Math.round(track(p, [[T.seal[0], 0], [T.seal[1], N - 1, 'linear']]));
-  return { cx, cy, h, w: h * BAG_ASPECT, f };
+  // as it settles on the left it leans toward the copy, with a small overshoot
+  const rot = track(p, [[T.slide[0], 0], [T.slide[0] + 0.08, 7.5, 'out'], [T.slide[1], 6]]);
+  return { cx, cy, h, w: h * BAG_ASPECT, f, rot };
 }
 
 // the big bean (frames 1-5)
@@ -311,7 +313,7 @@ function frame() {
 
   // bag
   const bag = bagState(p);
-  place(pose, bag.cx, bag.cy, bag.w, bag.h);
+  place(pose, bag.cx, bag.cy, bag.w, bag.h, bag.rot);
   pose.style.visibility = p > T.bagIn[0] ? 'visible' : 'hidden';
   if (poseImgs[bag.f].complete && poseImgs[bag.f].naturalWidth && lastPose !== bag.f) {
     pctx.clearRect(0, 0, pose.width, pose.height);
