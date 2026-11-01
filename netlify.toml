@@ -1,0 +1,5 @@
+# Static site: no build step, publish the repo root.
+# Overrides the Next.js build settings configured in the Netlify UI.
+[build]
+  command = "echo 'Static site – no build step'"
+  publish = "."
