@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <radialGradient id="top" cx="38%" cy="34%" r="75%">
+      <stop offset="0" stop-color="#5a3526"/><stop offset=".45" stop-color="#2e1710"/><stop offset="1" stop-color="#160a06"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a2016"/><stop offset="1" stop-color="#0f0604"/>
+    </linearGradient>
+  </defs>
+  <!-- a round dark mint chocolate seen at an angle: side band, then the top face with a soft sheen and a few sugar flecks -->
+  <ellipse cx="100" cy="114" rx="88" ry="54" fill="url(#edge)"/>
+  <ellipse cx="100" cy="100" rx="88" ry="54" fill="url(#top)"/>
+  <ellipse cx="78" cy="80" rx="40" ry="14" fill="#fff" opacity=".10" transform="rotate(-12 78 80)"/>
+  <path d="M30 96 C 60 70, 140 70, 170 96" stroke="#6b4433" stroke-width="2" fill="none" opacity=".45"/>
+  <g fill="#d9c7a8" opacity=".75"><circle cx="112" cy="92" r="1.6"/><circle cx="96" cy="110" r="1.2"/><circle cx="130" cy="104" r="1.4"/><circle cx="84" cy="96" r="1"/><circle cx="118" cy="118" r="1"/></g>
+</svg>

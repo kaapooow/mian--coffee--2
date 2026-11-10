@@ -3,344 +3,899 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mian Coffee, God kaffe God start</title>
+<title>Mian Coffee, Hvilken start vil du ha?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #F67DFF;
-    --ink: #2c0f07;
-    --ink-header: #151009;
-    --ink-body: #1a140b;
+    --green: #81E390;
+    --brown: #2C0F07;
+    --ink: #2C0F07;
+    --pink: #F67DFF;
+    --pink-light: #FCCDFF;
     --btn-dark: #231906;
-    --btn-brown: #2c0f07;
-    --btn-light: #E6E2E1;
     --display: 'Clash Display', 'Arial Black', sans-serif;
     --text: 'IBM Plex Sans', system-ui, sans-serif;
+
+    /* layout: one content width for the whole site, gutters grow with the screen */
+    --max: 1280px;        /* max content width, the container is this + gutters */
+    --gutter: 20px;       /* < 640 px: mobile */
+    --header-h: 64px;
   }
+  @media (min-width: 640px)  { :root { --gutter: 32px; } }                       /* tablet */
+  @media (min-width: 1024px) { :root { --gutter: 48px; --header-h: 80px; } }     /* desktop */
+  @media (min-width: 1440px) { :root { --gutter: 64px; } }                       /* wide, content stops at --max */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { background: var(--bg); }
-  body { background: var(--bg); color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+  html, body { background: var(--green); }
+  body { color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
   a { color: inherit; text-decoration: none; }
 
-  .scroll { height: 1000vh; position: relative; }
+  /* the animation runs over 640vh of scrolling (as before); the last frame then holds for a short moment
+     instead of 160vh, so the shop follows closely */
+  .scroll { height: 760vh; position: relative; }
   .viewport { position: sticky; top: 0; height: 100vh; overflow: hidden; }
   /* the design is drawn on a 1528 x 1016 stage, scaled to fit the window */
-  .stage { position: absolute; left: 50%; top: 50%; width: 1528px; height: 1016px; transform-origin: 0 0; }
+  /* the 3D scene is drawn on a 1528 x 1016 stage; JS scales and moves it per screen size.
+     It is split in two so the copy can sit between the background (grid, swirl) and the bag and beans. */
+  .stage { position: absolute; left: 0; top: 0; width: 1528px; height: 1016px; transform-origin: 0 0; pointer-events: none; }
+  .stage--back { z-index: 1; }
+  .stage--front { z-index: 3; }
+  .grid { position: absolute; left: 0; top: 0; width: 1584px; height: 1120px; opacity: .04; pointer-events: none;
+          background-image: linear-gradient(var(--brown) 1px, transparent 1px), linear-gradient(90deg, var(--brown) 1px, transparent 1px);
+          background-size: 112px 112px; }
 
-  /* header */
-  .header { position: absolute; left: 160px; top: 40px; width: 1208px; height: 32px;
-            display: flex; align-items: center; justify-content: space-between; z-index: 10; }
-  .logo { display: flex; align-items: center; gap: 8px; height: 32px; }
-  .logo img { width: 40px; height: 32px; display: block; }
-  .logo span { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: 0.9; color: var(--ink-header); }
-  .nav { display: flex; gap: 36px; font-weight: 500; font-size: 18px; color: var(--ink-header); }
-  .nav a:hover { text-decoration: underline; text-underline-offset: 4px; }
+  .container { width: 100%; max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
+
+  /* header: fixed to the top of the window, outside the animated stage */
+  .skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
+          background: var(--btn-dark); color: #fff; font-weight: 600; }
+  .skip:focus { top: 12px; }
+  /* solid bar in the page colour, so the bag and beans pass under it instead of over the logo and links */
+  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--ink)); background: var(--hdr-bg, var(--green)); }
+  .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
+  .logo .mark { position: relative; width: 40px; height: 32px; }
+  .logo .mark img { position: absolute; inset: 0; width: 40px; height: 32px; display: block; }
+  .logo span { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: .9; }
+  .nav { display: flex; gap: 32px; font-weight: 500; font-size: 16px; }
+  .nav a { padding-block: 8px; }
+  .nav a:hover, .nav a:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
+  @media (min-width: 1280px) { .nav { gap: 36px; font-size: 18px; } }
+  .menu-btn { display: none; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; background: none; border: 0;
+              color: inherit; font: 600 16px/1 var(--text); cursor: pointer; }
+  .menu-btn .bars { position: relative; width: 22px; height: 2px; background: currentColor; transition: background .2s; }
+  .menu-btn .bars::before, .menu-btn .bars::after { content: ""; position: absolute; left: 0; width: 22px; height: 2px;
+              background: currentColor; transition: transform .2s; }
+  .menu-btn .bars::before { transform: translateY(-7px); }
+  .menu-btn .bars::after { transform: translateY(7px); }
+  .site-header.open .bars { background: transparent; }
+  .site-header.open .bars::before { transform: rotate(45deg); }
+  .site-header.open .bars::after { transform: rotate(-45deg); }
+
+  /* under 1024 px the five links don't fit next to the logo: menu button + full-width panel */
+  @media (max-width: 1023px) {
+    .menu-btn { display: inline-flex; }
+    .nav { display: none; position: fixed; inset: var(--header-h) 0 auto; flex-direction: column; gap: 0;
+           padding: 8px var(--gutter) 32px; background: var(--hdr-bg, var(--green)); box-shadow: 0 24px 32px -24px rgb(0 0 0 / .25); }
+    .site-header.open { background: var(--hdr-bg, var(--green)); }
+    .site-header.open .nav { display: flex; }
+    .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; padding-block: 14px;
+             border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+  }
 
   /* buttons */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; border-radius: 48px;
-         font-size: 18px; line-height: normal; white-space: nowrap; transition: transform .15s ease; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px; padding: 10px 20px; border-radius: 48px;
+         font-weight: 600; font-size: 16px; line-height: normal; white-space: nowrap; transition: transform .15s ease; }
+  @media (min-width: 1024px) { .btn { padding: 12px 24px; font-size: 18px; } }
   .btn:hover { transform: translateY(-1px); }
   .btn img { width: 24px; height: 24px; display: block; }
-  .btn--hero { padding: 12px 24px; font-weight: 600; }
   .btn--dark { background: var(--btn-dark); color: #fff; }
   .btn--white { background: #fff; color: #000; }
-  .btn--product { padding: 12px 16px; font-weight: 500; border-radius: 9999px; }
-  .btn--brown { background: var(--btn-brown); color: #fff; }
-  .btn--light { background: var(--btn-light); color: var(--btn-brown); }
 
-  /* hero copy (frame 1) */
-  .hero { position: absolute; inset: 0; z-index: 4; will-change: transform, opacity; }
-  .hero h1 { font-weight: 400; }
-  .hero .l1, .hero .l2 { position: absolute; left: 160px; font-family: var(--display); font-size: 124px;
-                         line-height: 1; letter-spacing: 1.24px; white-space: nowrap; color: var(--ink); }
-  .hero .l1 { top: 252px; font-weight: 400; }
-  .hero .l2 { top: 384px; font-weight: 700; }
-  .hero p { position: absolute; left: 180px; top: 543px; width: 303px; font-weight: 500; font-size: 24px; color: var(--ink-body); }
-  .hero .actions { position: absolute; left: 180px; top: 660px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+  /* copy: normal HTML on the same container as the header.
+     Mobile first: text at the top under the header, the 3D scene below it. */
+  .copy { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .copy > .container { position: relative; height: 100%; }
+  .intro, .outro { position: absolute; left: var(--gutter); right: var(--gutter); top: calc(var(--header-h) + 16px);
+                   display: flex; flex-direction: column; align-items: flex-start; }
+  .intro a, .outro a { pointer-events: auto; }
+  .intro h1, .outro h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; line-height: 1; text-wrap: balance; }
+  .intro h1 { font-size: clamp(40px, 11vw, 88px); }
+  .intro p { margin-top: 16px; max-width: 22em; font-weight: 500; font-size: clamp(17px, 1.6vw + 10px, 24px); line-height: 1.5; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+  .outro h2 { font-size: clamp(48px, 14vw, 104px); line-height: .95; color: var(--pink-light); }
+  .outro h2 span { display: block; }
+  .outro { opacity: 0; visibility: hidden; }
 
-  /* product copy (frame 7) */
-  .product { position: absolute; left: 735px; top: 325px; width: 505px; display: flex; flex-direction: column; gap: 48px;
-             z-index: 4; opacity: 0; will-change: transform, opacity; }
-  .product .copy { display: flex; flex-direction: column; gap: 24px; color: var(--ink); }
-  .product h2 { font-family: var(--display); font-weight: 700; font-size: 72px; line-height: 1; letter-spacing: 0.72px; }
-  .product p { font-weight: 400; font-size: 24px; line-height: 1.4; letter-spacing: 0.24px; width: 500px; }
-  .product .actions { display: flex; gap: 16px; }
+  /* wide screens (desktop and landscape tablets): text in a left column, vertically centred */
+  @media (min-width: 640px) and (min-aspect-ratio: 11/10) {
+    .intro { top: calc(50% + var(--header-h) / 2); right: auto; width: min(46%, 640px); transform: translateY(-50%); }
+    .intro h1 { font-size: clamp(44px, min(7.6vw, 11.5vh), 116px); }
+    .outro { top: max(calc(var(--header-h) + 24px), 18vh); right: auto; width: min(60%, 820px); }
+    .outro h2 { font-size: clamp(56px, min(10vw, 15vh), 152px); }
+    .outro .actions { flex-direction: column; margin-top: 32px; }
+  }
+  @media (min-width: 1024px) { .actions { gap: 16px; margin-top: 32px; } }
+  /* low landscape screens (phones turned sideways): drop the paragraph so the headline and buttons fit */
+  @media (max-height: 520px) and (min-aspect-ratio: 11/10) { .intro p { display: none; } .intro h1 { font-size: clamp(32px, 13vh, 64px); } }
 
-  /* 3D sequences */
-  canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform, clip-path; }
-  #pose { z-index: 5; }
-  .bean { z-index: 6; }
+  .swirl { position: absolute; left: 61px; top: 280px; width: 1407px; height: 585px; overflow: visible; }
 
-  .loader { position: fixed; left: 16px; bottom: 14px; font: 500 12px/1.4 var(--text); opacity: .55; z-index: 20; }
-  .end { height: 40vh; }
-  @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
+  /* 3D image sequences */
+  canvas { position: absolute; left: 0; top: 0; will-change: transform, opacity; pointer-events: none; }
+  .bag { z-index: 5; }
+  .bag.back { z-index: 3; }
+  .bean { z-index: 7; }
+
+  /* ================================================================ shop: product card carousel */
+  /* One screen tall, starts under the fixed header. Card and image size are worked out in JS
+     from the space that is left, so the whole carousel always fits the viewport. */
+  .shop { position: relative; z-index: 1; background: var(--brown); color: var(--pink-light);
+          min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
+          padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(12px, 2.5vh, 32px);
+          overflow: clip; isolation: isolate; }
+  /* desktop: tuck the shop 60px up under the empty bottom of the last hero frame, ~200px between them */
+  @media (min-width: 1024px) { .shop { margin-top: -60px; } }
+  .shop-head { position: relative; z-index: 12; }
+  .shop-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
+
+  .carousel { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center;
+              margin-top: clamp(8px, 2vh, 28px); outline: none; touch-action: pan-y; }
+  .carousel:focus-visible { outline: 2px solid var(--pink); outline-offset: -4px; }
+  .c-stage { position: relative; height: var(--stage-h, 600px); }
+
+  /* slide = position in the carousel; card = the product card itself */
+  .slide { position: absolute; left: 50%; top: 0; width: var(--card-w); margin-left: calc(var(--card-w) / -2);
+           transition: transform .8s cubic-bezier(.22, .8, .2, 1), opacity .6s ease; will-change: transform; }
+  .slide-inner { transition: transform 1s cubic-bezier(.2, .8, .2, 1), opacity .8s ease; transition-delay: var(--build-delay, 0ms); }
+  .slide-hit { position: absolute; inset: 0; z-index: 3; border: 0; background: none; border-radius: 16px; cursor: pointer; }
+  .slide-hit:focus-visible { outline: 3px solid var(--pink); outline-offset: 6px; }
+  .slide.is-active .slide-hit { display: none; }
+
+  /* The card is a grid of square cells (about 50 px in the sketch). Cell size follows the card width,
+     the number of rows follows the screen height, and every part of the card sits on whole cells:
+     tag in the top rows, then the image, the title box, the price box and the button.
+     JS sets --cols, --rows, --sx (cell size) and the grid areas (--g-*). */
+  .card { position: relative; display: grid; width: var(--card-w); height: calc(var(--rows, 14) * var(--sx, 50.4px));
+          grid-template-columns: repeat(var(--cols, 10), 1fr); grid-template-rows: repeat(var(--rows, 14), 1fr);
+          border-radius: 16px; color: var(--brown); box-shadow: inset 0 0 0 6px var(--brown);
+          --grid-line: rgb(44 15 7 / .09);
+          background:
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sx, 50.4px),
+            linear-gradient(180deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sx, 50.4px),
+            linear-gradient(180deg, rgb(44 15 7 / .06), rgb(44 15 7 / 0)), #fff; }
+  /* cards on the sides sit back: darker at the top and faded, as in the sketch */
+  .card::after { content: ""; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; opacity: 0; z-index: 2;
+                 background: linear-gradient(180deg, rgb(44 15 7 / .32), rgb(44 15 7 / 0)); transition: opacity .6s ease; }
+  .slide:not(.is-active) .card::after { opacity: 1; }
+
+  .card-top { grid-area: var(--g-top); display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { display: inline-flex; align-items: center; padding: 3px 9px 3px 10px; border-radius: 9999px; border: 1px solid var(--brown);
+         background: #dbd6d5; font-weight: 500; font-size: var(--tag-fs, 12px); line-height: 18px; letter-spacing: .01em; white-space: nowrap; }
+  .icon-btn { width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center; border-radius: 9999px;
+              border: 1px solid var(--brown); background: rgb(44 15 7 / .12); color: var(--brown);
+              transition: background .2s, color .2s; }
+  .icon-btn[hidden] { display: none; }
+  .icon-btn:hover, .icon-btn:focus-visible { background: var(--brown); color: #fff; outline: none; }
+  .icon-btn svg, .card-btn svg { width: 24px; height: 24px; }
+
+  .card-img { grid-area: var(--g-img); min-height: 0; display: flex; align-items: center; justify-content: center; padding-bottom: 7px; }
+  .card-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; user-select: none; -webkit-user-drag: none; }
+
+  /* light boxes that fill whole cells; 1 px in from the cell's top and left so the grid lines stay visible */
+  .card-text, .card-price { margin: 1px 0 0 1px; background: #fcfcfc; min-width: 0; overflow: hidden; text-align: center; }
+  .card-text { grid-area: var(--g-text); display: flex; flex-direction: column; align-items: center; justify-content: center;
+               gap: 4px; padding: var(--box-pad, 12px) 8px; }
+  .card-text > * { flex-shrink: 0; }
+  .card-title { font-family: var(--display); font-weight: 700; font-size: var(--title-fs, 40px); line-height: 1; text-wrap: balance; }
+  .card-desc { max-width: 312px; font-weight: 500; font-size: var(--desc-fs, 16px); line-height: 1.4; text-wrap: balance; }
+  .card-price { grid-area: var(--g-price); display: flex; align-items: center; justify-content: center; gap: 8px;
+                font-weight: 500; font-size: var(--desc-fs, 16px); line-height: 1.4; white-space: nowrap; }
+  .card-price .unit { opacity: .7; }
+
+  .card-btn { grid-area: var(--g-btn); align-self: center; justify-self: center; z-index: 1; margin-bottom: calc(var(--sx, 50px) * .25);
+              display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 24px;
+              border: 0; border-radius: 48px; background: #231906; color: #fff; cursor: pointer; white-space: nowrap;
+              font: 600 var(--btn-fs, 18px)/1 var(--text); transition: transform .15s ease, background .2s; }
+  .card-btn:hover { transform: translateY(-1px); }
+  .card-btn:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
+  .card-btn:disabled { background: rgb(44 15 7 / .14); color: rgb(44 15 7 / .55); cursor: not-allowed; transform: none; }
+  .card-btn.is-added { background: #2f6b2a; }
+
+  /* pagination: prev, one dot per product, next */
+  .c-controls { position: relative; z-index: 12; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: var(--ctrl-gap, 24px); }
+  .c-arrow { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
+             background: var(--brown); color: var(--pink-light); border: 1.5px solid rgb(252 205 255 / .4); transition: background .2s, color .2s; }
+  .c-arrow:hover, .c-arrow:focus-visible { background: var(--pink-light); color: var(--brown); outline: none; }
+  .c-arrow svg { width: 20px; height: 20px; }
+  .dots { display: flex; align-items: center; gap: 2px; }
+  .dot { width: 24px; height: 44px; display: grid; place-items: center; border: 0; background: none; cursor: pointer; }
+  .dot::before { content: ""; width: 8px; height: 8px; border-radius: 8px; background: rgb(252 205 255 / .35); transition: width .35s ease, background .35s ease; }
+  .dot[aria-current="true"] { width: 36px; }
+  .dot[aria-current="true"]::before { width: 28px; background: var(--pink); }
+  .dot:focus-visible { outline: 2px solid var(--pink); outline-offset: -8px; border-radius: 12px; }
+  @media (max-width: 420px) { .dot { width: 18px; } .dot[aria-current="true"] { width: 30px; } .dot[aria-current="true"]::before { width: 22px; } }
+
+  /* phones on their side: the image moves to the left half of the grid, text and button to the right */
+  @media (max-height: 520px) and (min-aspect-ratio: 11/10) {
+    .card-desc { display: none; }
+    .c-controls { margin-top: 8px; }
+    .c-arrow { width: 36px; height: 36px; }
+    .dot { height: 36px; }
+    .card-btn { min-height: 40px; padding: 8px 18px; }
+    .tag { padding: 1px 8px; line-height: 18px; }
+    .card-btn { margin-bottom: 0; }
+  }
+
+  /* floating beans / chocolate pieces that rain in around the active card */
+  .beans { position: absolute; inset: 0; pointer-events: none; }
+  .beans--back { z-index: 2; }
+  .beans--front { z-index: 11; }
+  .bean-p { position: absolute; left: 0; top: 0; will-change: transform; }
+  .bean-mv { will-change: transform, opacity; }
+  .bean-p img { display: block; width: 100%; animation: float var(--dur, 7s) ease-in-out infinite alternate; animation-delay: var(--del, 0s); }
+  @keyframes float { from { translate: 0 calc(var(--fy, 8px) * -1); } to { translate: 0 var(--fy, 10px); } }
+
+  /* build-in the first time the section scrolls into view */
+  .shop:not(.is-built) .shop-head h2 { opacity: 0; translate: 0 32px; }
+  .shop-head h2 { transition: opacity .8s ease, translate .9s cubic-bezier(.2, .8, .2, 1); }
+  .shop:not(.is-built) .slide-inner { opacity: 0; transform: translate(var(--from-x, 0), 90px) rotate(var(--from-r, 0deg)) scale(.9); }
+  .shop:not(.is-built) .c-controls { opacity: 0; }
+  .c-controls { transition: opacity .7s ease .9s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bean-p img { animation: none; }
+    .slide, .slide-inner, .shop-head h2, .c-controls, .card::after, .dot::before { transition-duration: .01s !important; transition-delay: 0s !important; }
+  }
+
+  .loader { position: fixed; left: 16px; bottom: 14px; font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
+  .end { height: 0; }
+  @media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Hopp til innhold</a>
+<header class="site-header" id="header">
+  <div class="container header-inner">
+    <a class="logo" href="#" aria-label="Mian Coffee, til forsiden">
+      <span class="mark"><img src="assets/logo-mark.svg" alt="" id="logoDark"><img src="assets/logo-mark-rosa.svg" alt="" id="logoPink" style="opacity:0"></span>
+      <span>Mian Coffee</span>
+    </a>
+    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="nav">
+      <span class="bars" aria-hidden="true"></span><span id="menuLabel">Meny</span>
+    </button>
+    <nav class="nav" id="nav" aria-label="Hovedmeny">
+      <a href="#">Produkter</a>
+      <a href="#">Om oss</a>
+      <a href="#">Samarbeid</a>
+      <a href="#">Støtt oss</a>
+      <a href="#">Kontakt</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
 <div class="scroll">
   <div class="viewport">
-    <div class="stage" id="stage">
-      <header class="header">
-        <a class="logo" href="#" aria-label="Mian Coffee, til forsiden">
-          <img src="assets/logo-bean-mark.svg" alt="">
-          <span>Mian Coffee</span>
-        </a>
-        <nav class="nav" aria-label="Hovedmeny">
-          <a href="#">Abonnement</a>
-          <a href="#">Om oss</a>
-          <a href="#">Samarbeid</a>
-          <a href="#">Støtt oss</a>
-          <a href="#">Kontakt</a>
-        </nav>
-      </header>
+    <div class="stage stage--back" id="stageBack" aria-hidden="true">
+      <div class="grid"></div>
+      <svg class="swirl" viewBox="0 0 1407 585" fill="none" aria-hidden="true">
+        <path id="swirlPath" opacity="0.3" pathLength="1" d="M75 509.888C75 379.14 283.255 114.601 426.072 110.87C565.77 107.221 347.774 403.624 485.344 409.226C493.493 409.558 505.838 401.152 547.058 361.293C635.741 275.541 733.004 120.065 852.836 75.7054C892.347 61.0792 830.084 279.722 831.507 289.859C833.314 302.736 1274.99 95.8296 1331.66 81.9665" stroke-width="150" stroke-linecap="round" stroke-linejoin="bevel" stroke="#F67DFF" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+      </svg>
+    </div>
 
-      <section class="hero" id="hero" aria-label="Introduksjon">
-        <h1><span class="l1">God kaffe</span><span class="l2">God start</span></h1>
-        <p>Vi bygger MIAN Coffee fra bunnen av. Søt, balansert kaffe som er enkel å like</p>
-        <div class="actions">
-          <a class="btn btn--hero btn--dark" href="#">Støtt oss <img src="assets/ikon-stott.svg" alt=""></a>
-          <a class="btn btn--hero btn--white" href="#">Om oss <img src="assets/ikon-pil.svg" alt=""></a>
-        </div>
-      </section>
+    <div class="copy">
+      <div class="container">
+        <section class="intro" id="intro" aria-label="Introduksjon">
+          <h1>Hvilken<br>start vil<br>du ha?</h1>
+          <p>God kaffe. Bedre dager. Ferskbrent kaffe og små øyeblikk å glede seg til.</p>
+          <div class="actions">
+            <a class="btn btn--dark" href="#">Finn din kaffe <img src="assets/ikon-kopp.svg" alt=""></a>
+            <a class="btn btn--white" href="#">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
+          </div>
+        </section>
 
-      <section class="product" id="product" aria-label="Tjuvstart">
-        <div class="copy">
-          <h2>Tjuvstart</h2>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean vestibulum enim mollis, egestas augue ut, faucibus ligula. Quisque ornare magna dui.</p>
-        </div>
-        <div class="actions">
-          <a class="btn btn--product btn--brown" href="#">Abonnement</a>
-          <a class="btn btn--product btn--light" href="#">Se alle</a>
-        </div>
-      </section>
+        <section class="outro" id="outro" aria-label="Søt, rund, balansert">
+          <h2 id="outroH"><span>Søt, rund</span><span>balansert</span></h2>
+          <div class="actions" id="outroA">
+            <a class="btn btn--dark" href="#">Finn din kaffe <img src="assets/ikon-kopp.svg" alt=""></a>
+            <a class="btn btn--white" href="#">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
+          </div>
+        </section>
+      </div>
+    </div>
 
-      <canvas id="pose" width="1080" height="1350" aria-hidden="true"></canvas>
-      <div id="beans"></div>
+    <div class="stage stage--front" id="stage">
+      <div id="layers"></div>
     </div>
   </div>
 </div>
 <div class="end"></div>
+
+<section class="shop" id="shop" aria-labelledby="shopTitle">
+  <div class="beans beans--back" id="beansBack" aria-hidden="true"></div>
+  <div class="container">
+    <div class="shop-head">
+      <h2 id="shopTitle">Finn din favoritt</h2>
+    </div>
+  </div>
+
+  <div class="carousel" id="carousel" tabindex="0" role="region" aria-roledescription="karusell" aria-label="Produkter">
+    <div class="c-stage" id="cStage"><!-- cards are rendered from PRODUCTS in the script --></div>
+    <div class="c-controls">
+      <button class="c-arrow" id="cPrev" type="button" aria-label="Forrige produkt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="dots" id="cDots" role="group" aria-label="Velg produkt"></div>
+      <button class="c-arrow" id="cNext" type="button" aria-label="Neste produkt">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <p class="visually-hidden" id="cLive" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></p>
+  </div>
+  <div class="beans beans--front" id="beansFront" aria-hidden="true"></div>
+</section>
+</main>
 <div class="loader" id="loader">Laster …</div>
 
 <script>
-// ---------------------------------------------------------------- assets
+// ------------------------------------------------------------------ assets
 const N = 150;
 const small = matchMedia('(max-width: 768px)').matches;
-const BEAN_DIR = small ? 'frames/bonne-800' : 'frames/bonne';
-const POSE_DIR = small ? 'frames/pose-720' : 'frames/pose';
+const BAG_DIR = small ? 'frames/pose2-720' : 'frames/pose2';
+const BEAN_DIR = 'frames/bonne-800';
 const pad = i => String(i).padStart(3, '0');
 const loader = document.getElementById('loader');
-let loaded = 0;
+let loaded = 0, total = 2 * N + 1, dirty = true;
+const onload = () => { loaded++; loader.textContent = loaded < total ? `Laster ${loaded}/${total}` : ''; dirty = true; };
 const seq = (dir, name) => Array.from({ length: N }, (_, k) => {
-  const im = new Image();
-  im.decoding = 'async';
-  im.src = `${dir}/${name}_${pad(k + 1)}.webp`;
-  im.onload = () => {
-    loaded++;
-    loader.textContent = loaded < 2 * N ? `Laster ${loaded}/${2 * N}` : '';
-    needsDraw = true;
-  };
-  return im;
+  const im = new Image(); im.decoding = 'async'; im.onload = onload; im.src = `${dir}/${name}_${pad(k + 1)}.webp`; return im;
 });
+const bagImgs = seq(BAG_DIR, 'pose');
 const beanImgs = seq(BEAN_DIR, 'bonne');
-const poseImgs = seq(POSE_DIR, 'pose');
-
-// --------------------------------------------- measurements from the renders
-// fractions of each frame that the object covers (measured on the WebP frames)
-const BEAN_H = 0.662;                  // bean height in its square frame (hero frame)
-const BAG_OPEN = { top: 0.164, h: 0.539 };
-const BAG_CLOSED = { h: 0.644, cy: 0.509 };
-const RIM = 0.465;                     // front rim of the open bag (fraction of frame height)
-const MOUTH = [0.25, 0.75];            // usable mouth width
-const BAG_ASPECT = 1080 / 1350;
+const neutral = new Image(); neutral.onload = onload; neutral.src = 'assets/pose-noytral.webp';
 
 // -------------------------------------------------------------- helpers
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const E = {
-  linear: t => t,
-  in: t => t * t,
-  out: t => 1 - (1 - t) * (1 - t),
-  out3: t => 1 - Math.pow(1 - t, 3),
-  inOut: t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+  lin: t => t, in: t => t * t, out: t => 1 - (1 - t) * (1 - t),
+  io: t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
 };
-// keyframes: [[progress, value, easeIntoThisKey], ...]
-function track(p, keys) {
+// keys: [[progress, value, ease?], ...]
+function tr(p, keys) {
   if (p <= keys[0][0]) return keys[0][1];
   for (let i = 1; i < keys.length; i++) {
-    const [p1, v1, ease = 'inOut'] = keys[i], [p0, v0] = keys[i - 1];
-    if (p <= p1) return lerp(v0, v1, E[ease](clamp((p - p0) / (p1 - p0))));
+    const [p1, v1, e = 'io'] = keys[i], [p0, v0] = keys[i - 1];
+    if (p <= p1) return lerp(v0, v1, E[e](clamp((p - p0) / (p1 - p0))));
   }
   return keys[keys.length - 1][1];
 }
+const mix = (a, b, t) => a.map((v, i) => Math.round(lerp(v, b[i], t)));
+const rgb = c => `rgb(${c.join(',')})`;
 
-// ---------------------------------------------------------- timeline
-// Design frames (Figma 328:2263): 1 hero, 2 copy out, 3 bean centred, 4 beans gather,
-// 5 bag rises and catches them, 6 bag sealed in the centre, 7 bag left with product copy.
-const T = {
-  copyOut: [0.04, 0.16],
-  beanCentre: 0.27, beanSmall: 0.35,
-  bagIn: [0.35, 0.47],
-  bigFall: [0.47, 0.57],
-  seal: [0.60, 0.82],
-  slide: [0.84, 0.95],
-};
+// ------------------------------------------------------------- timeline
+// Six design frames (Figma 371:4484). K[n] is the scroll progress where frame n+1 is shown.
+const K = [0, 0.14, 0.30, 0.46, 0.62, 0.80];
 
-// bag: canvas height and centre in design px
-const bagHOpen = 518 / BAG_OPEN.h;                    // open bag is 518 px tall in frame 5
-const bagHClosed = 715 / BAG_CLOSED.h;                // sealed bag is ~715 px tall in frames 6 and 7
-const bagCyOpen = 429 - BAG_OPEN.top * bagHOpen + bagHOpen / 2;
-const bagCyHidden = 1016 + 30 - BAG_OPEN.top * bagHOpen + bagHOpen / 2;
-const bagCyClosed = 536 - (BAG_CLOSED.cy - 0.5) * bagHClosed;
+// Bag render measurements: the bag fills 69.4 % of the square frame upright, its centre sits
+// 0.8 % below the frame centre, and upside down its open rim is 18.1 % below the centre.
+const BAG = 738 / 0.694;                 // canvas size so the bag is 738 px tall, like the design
+const NEUTRAL2 = 642 / 0.694, NEUTRAL3 = 448 / 0.694;
 
-function bagState(p) {
-  const h = track(p, [[T.seal[0], bagHOpen], [T.seal[1], bagHClosed]]);
-  let cy = track(p, [[T.bagIn[0], bagCyHidden], [T.bagIn[1], bagCyOpen, 'out3'],
-                     [T.seal[0], bagCyOpen], [T.seal[1], bagCyClosed]]);
-  // small dip when the big bean lands
-  const d = clamp((p - (T.bigFall[1] - 0.01)) / 0.05);
-  cy += Math.sin(d * Math.PI) * 10;
-  const cx = track(p, [[T.slide[0], 764], [T.slide[1], 411]]);
-  const f = Math.round(track(p, [[T.seal[0], 0], [T.seal[1], N - 1, 'linear']]));
-  // the 8° turn toward the copy is in the render itself, so no 2D tilt here
-  return { cx, cy, h, w: h * BAG_ASPECT, f, rot: 0 };
-}
-
-// the big bean (frames 1-5)
-function bigBean(p, bag) {
-  const c1 = 697 / BEAN_H, c3 = 452 / BEAN_H, c4 = 286 / BEAN_H;
-  const rimY = bag.cy - bag.h / 2 + RIM * bag.h;
-  const mouthW = (MOUTH[1] - MOUTH[0]) * bag.w;
-  const cEnd = 0.42 * mouthW / 0.45;
-  const size = track(p, [[T.copyOut[0], c1], [T.beanCentre, c3], [T.beanSmall, c4], [T.bigFall[0], c4], [T.bigFall[1], cEnd]]);
-  const cx = track(p, [[T.copyOut[0], 965], [T.beanCentre, 906], [T.beanSmall, 854], [T.bigFall[0], 854], [T.bigFall[1], bag.cx, 'inOut']]);
-  let cy = track(p, [[T.copyOut[0], 538], [T.beanCentre, 508], [T.beanSmall, 507]]);
-  if (p > T.bigFall[0]) cy = lerp(507, rimY + size * BEAN_H / 2 + 6, E.in(clamp((p - T.bigFall[0]) / (T.bigFall[1] - T.bigFall[0]))));
-  // front-facing until it drops, then tumbles (sequence played backwards)
-  const f = (N - 1) - Math.round(track(p, [[T.bigFall[0] - 0.03, 0], [T.bigFall[1], N - 1, 'in']]));
-  // the hero bean leans like the photo in the sketch, and straightens as it moves to the centre
-  const rot = track(p, [[T.copyOut[0], 14], [T.beanCentre, 4], [T.beanSmall, 0]]);
-  return { cx, cy, size, f, rot, rimY, active: p > T.beanSmall, gone: p > T.bigFall[1] + 0.004 };
-}
-
-// the six small beans from frame 4: [x, y, height in design px, frame offset]
-const SMALL = [
-  [601, 438, 104, 12], [918, 548, 54, 70], [701, 352, 54, 33],
-  [919, 355, 70, 101], [621, 585, 56, 128], [1111, 428, 130, 55],
+// ---------------------------------------------------------------- beans
+// Positions are measured on the 1100 px wide Figma screenshots; S converts them to the stage.
+const S = 1528 / 1100;
+const BEAN_FILL = 0.66;                  // how much of its frame the bean's long side covers
+// [frame, [F3 x,y,size], [F4], [F5], [F6] or null to fade out]
+const BEANS = [
+  [12,  [228, 535, 45], [507, 246, 25], [507, 218, 28], null],
+  [70,  [278, 545, 28], [483, 269, 12], [483, 241, 12], null],
+  [33,  [288, 490, 24], [479, 312, 25], [479, 284, 28], null],
+  [101, [338, 515, 55], [538, 306, 55], [537, 277, 55], null],
+  [128, [258, 600, 95], [514, 422, 90], [535, 507, 290], [543, 425, 302]],   // the big bean
+  [55,  [332, 640, 48], [608, 336, 45], [608, 308, 45], null],
+  [88,  [380, 580, 45], [453, 380, 45], [420, 270, 45], [423, 272, 85]],
+  [140, [265, 665, 20], [497, 362, 20], [497, 334, 20], null],
+  [20,  [298, 660, 12], [564, 353, 22], [564, 325, 22], null],
+  [115, [313, 456, 10], [598, 412, 50], [637, 383, 50], [738, 357, 85]],
+  [45,  null,            [579, 447, 12], [373, 442, 55], [372, 443, 85]],
+  [95,  null,            [555, 469, 25], [736, 356, 50], null],
 ];
-function smallBean(p, i, bag) {
-  const [x, y, h, off] = SMALL[i];
-  const size = h / BEAN_H;
-  const inStart = 0.20 + i * 0.018, inEnd = inStart + 0.10;
-  const fallStart = 0.42 + i * 0.012, fallEnd = fallStart + 0.06;
-  const rimY = bag.cy - bag.h / 2 + RIM * bag.h;
-  const mouthX = bag.cx + ((i % 3) - 1) * 0.12 * bag.w;
-  let cx = x, cy, s = size;
-  if (p < inEnd) cy = lerp(-160 - i * 40, y, E.out3(clamp((p - inStart) / (inEnd - inStart))));
-  else cy = y + Math.sin((p - inEnd) * 60 + i) * 4;      // hover
-  if (p > fallStart) {
-    const t = clamp((p - fallStart) / (fallEnd - fallStart));
-    cx = lerp(x, mouthX, E.inOut(t));
-    cy = lerp(y, rimY + size * 0.8 * BEAN_H / 2 + 6, E.in(t));
-    s = lerp(size, size * 0.8, t);
-  }
-  const f = Math.floor((off + p * 900) % N);
-  return { cx, cy, size: s, f, rimY, active: p > inStart && p < 0.6, clipOn: p > fallStart, gone: p > fallEnd + 0.003 };
-}
+const BIG = 4;
 
-// ------------------------------------------------------------- DOM
+// ------------------------------------------------------------------- DOM
 const stage = document.getElementById('stage');
-const hero = document.getElementById('hero');
-const product = document.getElementById('product');
-const pose = document.getElementById('pose');
-const pctx = pose.getContext('2d');
-if (small) { pose.width = 720; pose.height = 900; }
-const beanRes = small ? 400 : 1200;
-function makeBean(res) {
-  const c = document.createElement('canvas');
-  c.width = c.height = res; c.className = 'bean'; c.setAttribute('aria-hidden', 'true');
-  document.getElementById('beans').appendChild(c);
-  return { el: c, ctx: c.getContext('2d'), last: -1 };
+const layers = document.getElementById('layers');
+function makeCanvas(cls, res) {
+  const c = document.createElement('canvas'); c.width = c.height = res; c.className = cls; c.setAttribute('aria-hidden', 'true');
+  layers.appendChild(c); return { el: c, ctx: c.getContext('2d'), last: null };
 }
-const big = makeBean(beanRes);
-const smalls = SMALL.map(() => makeBean(small ? 160 : 320));
-let lastPose = -1;
+const back3 = makeCanvas('bag back', 600), back2 = makeCanvas('bag back', 800);
+const bag = makeCanvas('bag', small ? 720 : 1200);
+const beans = BEANS.map((b, i) => makeCanvas('bean', i === BIG ? 800 : 240));
 
-function place(el, cx, cy, w, h, rot = 0) {
-  el.style.width = w + 'px'; el.style.height = h + 'px';
-  el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${rot}deg)`;
-  el.style.transformOrigin = '50% 50%';
+function place(c, cx, cy, size, rot = 0, opacity = 1) {
+  c.el.style.width = size + 'px'; c.el.style.height = size + 'px';
+  c.el.style.transform = `translate(${cx - size / 2}px, ${cy - size / 2}px) rotate(${rot}deg)`;
+  c.el.style.opacity = opacity;
+  c.el.style.visibility = opacity > 0.01 ? 'visible' : 'hidden';
 }
-function paint(b, img, f, force) {
-  if ((force || b.last !== f) && img.complete && img.naturalWidth) {
-    b.ctx.clearRect(0, 0, b.el.width, b.el.height);
-    b.ctx.drawImage(img, 0, 0, b.el.width, b.el.height);
-    b.last = f;
-  }
-}
-// hide what is below the bag's front rim, so the bean drops "into" the bag
-function clipToRim(el, cy, size, rimY, on) {
-  const below = on ? clamp(cy + size / 2 - rimY, 0, size) : 0;
-  el.style.clipPath = below ? `inset(0 0 ${(below / size) * 100}% 0)` : 'none';
+function paint(c, img, key) {
+  if (c.last === key || !img.complete || !img.naturalWidth) return;
+  c.ctx.clearRect(0, 0, c.el.width, c.el.height); c.ctx.drawImage(img, 0, 0, c.el.width, c.el.height); c.last = key;
 }
 
-let needsDraw = true;
+const stageBack = document.getElementById('stageBack');
+const intro = document.getElementById('intro');
+const outro = document.getElementById('outro'), outroH = document.getElementById('outroH'), outroA = document.getElementById('outroA');
+const header = document.getElementById('header');
+const logoDark = document.getElementById('logoDark'), logoPink = document.getElementById('logoPink');
+const swirl = document.getElementById('swirlPath');
+const GREEN = [129, 227, 144], BROWN = [44, 15, 7], INK = [44, 15, 7], PINK = [246, 125, 255];
+
+// ---------------------------------------------------------------- layout
+// Wide screens show the whole stage, fitted and centred, with the copy in a left column.
+// Narrow and portrait screens zoom in on the bag and beans and keep them in the free space
+// under the copy; the camera follows the action as you scroll.
+const wideMQ = matchMedia('(min-width: 640px) and (min-aspect-ratio: 11/10)');
+let L = {};
 function layout() {
-  const s = Math.min(innerWidth / 1528, innerHeight / 1016);
-  stage.style.transform = `scale(${s}) translate(-50%, -50%)`;
-  needsDraw = true;
+  const W = innerWidth, H = innerHeight;
+  const bottom = el => el.offsetTop + el.offsetHeight;      // ignores transforms, so it is stable while scrolling
+  const introB = bottom(intro), outroB = bottom(outro);
+  // wide: where the intro text really ends, so the bag (left edge ~715, right edge of the back bags ~1330 on the stage) never covers it
+  const rg = document.createRange(); rg.selectNodeContents(intro);
+  const textRight = Math.max(...[...rg.getClientRects()].map(r => r.right)) + 24;
+  let fit = Math.min(W / 1528, H / 1016), fitX = (W - 1528 * fit) / 2;
+  if (fitX + 715 * fit < textRight) {
+    fit = Math.min(fit, (W - textRight) / (1330 - 715));
+    fitX = textRight - 715 * fit;
+  }
+  L = { wide: wideMQ.matches, W, H, fit, fitX,
+        // mobile: the bag (about 780 px tall on the stage) fills the space under the copy, never wider than the screen allows
+        s1: Math.min((H - introB - 16) / 780, W / 520, 1),
+        s2: Math.min((H - 64) / 980, W / 720, 1),
+        y1: introB + (H - introB) / 2,
+        y6: outroB + (H - outroB) / 2 };
+  dirty = true;
 }
+function placeStage(p) {
+  let s, tx, ty;
+  if (L.wide) {
+    s = L.fit; tx = L.fitX; ty = (L.H - 1016 * s) / 2;
+  } else {
+    // stage point (fx, fy) is kept at screen point (W/2, sy)
+    const fx = tr(p, [[K[0], 1010], [K[1], 960], [K[2], 800], [K[3], 720], [K[5], 700]]);
+    const fy = tr(p, [[K[0], 527], [K[1], 560], [K[2], 500], [K[3], 380], [K[4], 470], [K[5], 500]]);
+    const sy = tr(p, [[K[1], L.y1], [K[2], L.H * .5], [K[3], L.H * .48], [K[4], L.H * .52], [K[5], L.y6]]);
+    s = tr(p, [[K[1], L.s1], [K[2], L.s2]]);
+    tx = L.W / 2 - fx * s; ty = sy - fy * s;
+  }
+  const t = `translate(${tx}px, ${ty}px) scale(${s})`;
+  stage.style.transform = t; stageBack.style.transform = t;
+}
+
+// mobile menu: toggle, close on Escape, on link click and when the screen gets wide again
+const menuBtn = document.getElementById('menuBtn'), menuLabel = document.getElementById('menuLabel');
+function setMenu(open) {
+  header.classList.toggle('open', open);
+  menuBtn.setAttribute('aria-expanded', open);
+  menuLabel.textContent = open ? 'Lukk' : 'Meny';
+}
+menuBtn.addEventListener('click', () => setMenu(!header.classList.contains('open')));
+document.getElementById('nav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && header.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
+matchMedia('(min-width: 1024px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
 
 function frame() {
-  if (!needsDraw) return requestAnimationFrame(frame);
-  needsDraw = false;
-  const sc = document.querySelector('.scroll');
-  const p = clamp(-sc.getBoundingClientRect().top / (sc.offsetHeight - innerHeight));
-
-  // copy
-  const up = track(p, [[T.copyOut[0], 0], [T.copyOut[1], -340, 'in']]);
-  hero.style.transform = `translateY(${up}px)`;
-  hero.style.opacity = track(p, [[T.copyOut[0], 1], [T.copyOut[1], 0]]);
-  hero.style.visibility = p > T.copyOut[1] ? 'hidden' : 'visible';
-  const pin = clamp((p - T.slide[0] - 0.06) / (T.slide[1] - T.slide[0] - 0.04));
-  product.style.opacity = E.out(pin);
-  product.style.transform = `translateX(${(1 - E.out3(pin)) * 60}px)`;
-  product.style.visibility = pin > 0 ? 'visible' : 'hidden';
-
-  // bag
-  const bag = bagState(p);
-  place(pose, bag.cx, bag.cy, bag.w, bag.h, bag.rot);
-  pose.style.visibility = p > T.bagIn[0] ? 'visible' : 'hidden';
-  if (poseImgs[bag.f].complete && poseImgs[bag.f].naturalWidth && lastPose !== bag.f) {
-    pctx.clearRect(0, 0, pose.width, pose.height);
-    pctx.drawImage(poseImgs[bag.f], 0, 0, pose.width, pose.height);
-    lastPose = bag.f;
-  }
-
-  // big bean
-  const b = bigBean(p, bag);
-  place(big.el, b.cx, b.cy, b.size, b.size, b.rot);
-  clipToRim(big.el, b.cy, b.size, b.rimY, p > T.bigFall[0]);
-  big.el.style.visibility = b.gone ? 'hidden' : 'visible';
-  paint(big, beanImgs[b.f], b.f);
-
-  // small beans
-  smalls.forEach((sb, i) => {
-    const st = smallBean(p, i, bag);
-    place(sb.el, st.cx, st.cy, st.size, st.size);
-    clipToRim(sb.el, st.cy, st.size, st.rimY, st.clipOn);
-    sb.el.style.visibility = st.active && !st.gone ? 'visible' : 'hidden';
-    if (st.active) paint(sb, beanImgs[st.f], st.f);
-  });
   requestAnimationFrame(frame);
+  if (!dirty) return;
+  dirty = false;
+  const sc = document.querySelector('.scroll');
+  // scroll fraction 0..0.97 drives the animation (last keyframe K5 = 0.80); the last 3 % is a short hold
+  const p = clamp(-sc.getBoundingClientRect().top / (sc.offsetHeight - innerHeight) * (0.80 / 0.97));
+
+  // background and header colour: green to brown between frame 3 and 4
+  const dark = clamp((p - K[2] - 0.05) / (K[3] - K[2] - 0.07));
+  const bg = rgb(mix(GREEN, BROWN, E.io(dark)));
+  document.documentElement.style.background = bg; document.body.style.background = bg;
+  header.style.setProperty('--hdr', rgb(mix(INK, PINK, E.io(dark))));
+  header.style.setProperty('--hdr-bg', bg);
+  logoPink.style.opacity = E.io(dark); logoDark.style.opacity = 1 - E.io(dark);
+
+  placeStage(p);
+
+  // frame 1 copy drifts up and fades out
+  intro.style.translate = `0 ${tr(p, [[K[0], 0], [K[1], -24], [K[2], -160]])}px`;
+  const io = tr(p, [[K[1], 1], [K[2], 0.32], [K[2] + 0.06, 0]]);
+  intro.style.opacity = io; intro.style.visibility = io > 0.01 ? 'visible' : 'hidden';
+
+  // the two neutral bags behind slide out to the right
+  place(back2, tr(p, [[K[0], 1128], [K[1], 1283], [K[2], 2250]]), 529, NEUTRAL2);
+  place(back3, tr(p, [[K[0], 1275], [K[1], 1609], [K[2], 2250]]), 529, NEUTRAL3);
+  paint(back2, neutral, 'n'); paint(back3, neutral, 'n');
+
+  // the front bag: tips over, pours, ends upside down at the top
+  const bx = tr(p, [[K[0], 958.5], [K[1], 906], [K[2], 823], [K[3], 751]]);
+  const by = tr(p, [[K[0], 527.5], [K[1], 593], [K[2], 542], [K[3], 30], [K[4], -110], [K[5], -260]]);
+  const bf = Math.round(tr(p, [[K[0], 0, 'lin'], [K[1], 49, 'lin'], [K[2], 95, 'lin'], [K[3], N - 1, 'lin']]));
+  // on narrow screens the last headline sits at the top, right where the empty bag hangs: let the bag leave
+  const bagOp = L.wide ? 1 : tr(p, [[K[4] + 0.03, 1], [K[5] - 0.04, 0]]);
+  place(bag, bx, by, BAG, 0, bagOp);
+  paint(bag, bagImgs[bf], bf);
+
+  // beans pour out of the mouth (frame 3), gather under the bag (4), the big one grows (5),
+  // then three small ones and the big bean stay for the last frame (6)
+  const mouth = [bx - 0.906 * 207, by + 0.423 * 207];   // open rim when the bag lies at 115°
+  BEANS.forEach(([f0, b3, b4, b5, b6], i) => {
+    const c = beans[i];
+    const st = (b) => b ? [b[0] * S, b[1] * S, b[2] * S / BEAN_FILL] : null;
+    const s3 = st(b3), s4 = st(b4), s5 = st(b5), s6 = st(b6);
+    const out = K[2] - 0.05 + i * 0.006;                // staggered pour
+    const from = [mouth[0], mouth[1], (s3 || s4)[2] * 0.4];
+    const first = s3 || [lerp(from[0], s4[0], 0.5), lerp(from[1], s4[1], 0.5), s4[2] * 0.7];
+    const keysFor = k => {
+      const ks = [[out, from[k]], [K[2] + 0.02 + (s3 ? 0 : 0.04), first[k]], [K[3], s4[k]], [K[4], s5[k]]];
+      if (s6) ks.push([K[5], s6[k]]);
+      else ks.push([K[5], s5[k] + (k === 1 ? -60 : 0)]);
+      return ks;
+    };
+    const x = tr(p, keysFor(0)), y = tr(p, keysFor(1)), size = tr(p, keysFor(2));
+    let op = tr(p, [[out, 0], [out + 0.015, 1]]);
+    if (!s6) op *= tr(p, [[K[4] + 0.04, 1], [K[5] - 0.02, 0]]);
+    let rot = 0, fr;
+    if (i === BIG) {
+      // tumbles while it falls, faces the camera in frame 5, lies down in frame 6
+      fr = Math.round(tr(p, [[out, f0, 'lin'], [K[3], 60, 'lin'], [K[4] - 0.03, N - 1]]));
+      rot = tr(p, [[K[4], 0], [K[5], 78]]);
+    } else {
+      fr = Math.floor(f0 + Math.max(0, p - out) * 520) % N;   // keeps tumbling
+      rot = tr(p, [[K[4], 0], [K[5], i * 23 % 60 - 30]]);
+    }
+    place(c, x, y, size, rot, op);
+    if (op > 0.01) paint(c, beanImgs[fr], fr);
+  });
+
+  // last frame: swirl draws in from frame 5, headline and buttons come in
+  swirl.setAttribute('stroke-dashoffset', tr(p, [[K[4], 0.985, 'lin'], [K[5], 0, 'out']]));
+  swirl.style.visibility = p >= K[4] - 0.005 ? 'visible' : 'hidden';
+  const oi = clamp((p - K[4] - 0.08) / (K[5] - K[4] - 0.08));
+  outro.style.opacity = E.out(oi);
+  outroH.style.transform = `translateY(${(1 - E.out(oi)) * 40}px)`;
+  outroA.style.transform = `translateY(${(1 - E.out(oi)) * 24}px)`;
+  outro.style.visibility = oi > 0 ? 'visible' : 'hidden';
 }
-addEventListener('scroll', () => { needsDraw = true; }, { passive: true });
+addEventListener('scroll', () => { dirty = true; }, { passive: true });
 addEventListener('resize', layout);
+document.fonts && document.fonts.ready.then(layout);   // text heights change once the web fonts arrive
 layout();
 requestAnimationFrame(frame);
+</script>
+
+<script>
+// ===================================================================== shop: product card carousel
+const PRODUCTS = [
+  { id: 'moccabonner', tag: 'Sjokolade', title: 'Moccabønner', price: 99, unit: '1 pose',
+    desc: 'Kaffebønner dyppet i mørk håndverkssjokolade fra Heimdal.', img: 'assets/produkter/moccabonner.webp', alt: 'Pose med moccabønner fra Heimdal' },
+  { id: 'tjuvstart-drip', tag: 'Drip coffee', title: 'Tjuvstart Drip', price: 25, unit: '12 gram',
+    desc: 'Én kopp, ferdig dosert. 12 g filtermalt Tjuvstart i en drip-pose.', img: 'assets/produkter/tjuvstart-drip.webp', alt: 'Tjuvstart drip-pose foran en kopp med drip-filter' },
+  { id: 'tjuvstart-250', tag: 'Kaffe', title: 'Tjuvstart', price: 189, unit: '250 gram',
+    desc: 'Kenya · Nandi County · Medium brent. Sjokolade, sukkerrør og røde bær.', img: 'assets/produkter/tjuvstart-250.webp', alt: 'Kaffepose med Tjuvstart, 250 g' },
+  { id: 'karamell-salt', tag: 'Karamell', title: 'Karamell med salt', price: 99, unit: '1 pose',
+    desc: 'Håndlaget melkesjokolade med karamell og flaksalt fra Heimdal.', img: 'assets/produkter/karamell-salt.webp', alt: 'Pose med saltkaramell fra Heimdal' },
+  { id: 'drommestart-drip', tag: 'Drip coffee', title: 'Drømmestart Drip', price: 19, unit: '12 gram', soldOut: true,
+    desc: 'Én kopp, ferdig dosert. 12 g filtermalt Drømmestart i en drip-pose.', img: 'assets/produkter/drommestart-drip.webp', alt: 'Drømmestart drip-pose foran en kopp med drip-filter' },
+  { id: 'drommestart-250', tag: 'Kaffe', title: 'Drømmestart', price: 179, unit: '250 gram', soldOut: true,
+    desc: 'Guatemala · Hacienda El Guarsin · Medium brent. Vasket.', img: 'assets/produkter/drommestart-250.webp', alt: 'Kaffepose med Drømmestart, 250 g' },
+  { id: 'konfekt-hjertemix', tag: 'Konfekt', title: 'Konfekt hjertemix', price: 99, unit: '1 pose',
+    desc: 'Blandede konfekthjerter i hvit, lys og mørk sjokolade fra Heimdal.', img: 'assets/produkter/konfekt-hjertemix.webp', alt: 'Pose med konfekthjerter fra Heimdal' },
+  { id: 'mintkonfekt', tag: 'Konfekt', title: 'Mintkonfekt', price: 99, unit: '1 pose',
+    desc: 'Mørk sjokolade med frisk peppermyntefyll fra Heimdal.', img: 'assets/produkter/mintkonfekt.webp', alt: 'Pose med mintkonfekt fra Heimdal' },
+];
+const kr = n => n.toLocaleString('nb-NO', { minimumFractionDigits: 2 }) + ' kr';
+const nok = n => `${n},- NOK`;
+const ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const ICON_BASKET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h17"/><path d="M5 10l1.5 8.3A2 2 0 0 0 8.5 20h7a2 2 0 0 0 2-1.7L19 10"/><path d="M8.5 10l3-5.5M15.5 10l-3-5.5"/><path d="M10 13.5v3M14 13.5v3"/></svg>';
+
+const shop = document.getElementById('shop');
+const carousel = document.getElementById('carousel');
+const cStage = document.getElementById('cStage');
+const cDots = document.getElementById('cDots');
+const cLive = document.getElementById('cLive');
+const shopHead = shop.querySelector('.shop-head');
+const cControls = shop.querySelector('.c-controls');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let active = 2;                     // start on Tjuvstart, with the drip pouch and the caramels beside it
+
+// ------------------------------------------------------------- cards
+const slides = PRODUCTS.map((p, i) => {
+  const el = document.createElement('div');
+  el.className = 'slide';
+  el.innerHTML = `
+    <button class="slide-hit" type="button" aria-label="Vis ${p.title}"></button>
+    <div class="slide-inner">
+      <article class="card" aria-label="${p.title}, ${i + 1} av ${PRODUCTS.length}">
+        <div class="card-top">
+          <div class="tags"><span class="tag">${p.tag}</span></div>
+          <a class="icon-btn" href="#" aria-label="Les mer om ${p.title}" hidden>${ICON_ARROW}</a>  <!-- product page link, hidden until the pages exist -->
+        </div>
+        <div class="card-img"><img src="${p.img}" alt="${p.alt}" loading="lazy" draggable="false"></div>
+        <div class="card-text">
+          <h3 class="card-title">${p.title}</h3>
+          <p class="card-desc">${p.desc}</p>
+        </div>
+        <p class="card-price"><span>${nok(p.price)}</span><span aria-hidden="true">·</span><span class="unit">${p.unit}</span></p>
+        <button class="card-btn" type="button" ${p.soldOut ? 'disabled' : ''}>${p.soldOut ? 'Utsolgt' : 'Legg i handlekurv ' + ICON_BASKET}</button>
+      </article>
+    </div>`;
+  el.querySelector('.slide-hit').addEventListener('click', () => { if (!dragMoved) go(i, Math.sign(offset(i)) || 1); });
+  const btn = el.querySelector('.card-btn');
+  btn.addEventListener('click', () => {
+    btn.classList.add('is-added'); btn.innerHTML = 'Lagt i handlekurven ✓';
+    setTimeout(() => { btn.classList.remove('is-added'); btn.innerHTML = 'Legg i handlekurv ' + ICON_BASKET; }, 1600);
+  });
+  cStage.appendChild(el);
+  return el;
+});
+const dots = PRODUCTS.map((p, i) => {
+  const b = document.createElement('button');
+  b.className = 'dot'; b.type = 'button'; b.setAttribute('aria-label', `Vis ${p.title}`);
+  b.addEventListener('click', () => go(i, Math.sign(offset(i)) || 1));
+  cDots.appendChild(b);
+  return b;
+});
+
+// ------------------------------------------------------------- sizes per screen
+// Square cells: the cell size comes from the card width (10 cells of 50.4 px on desktop, as in the sketch).
+// Title, text and price get as many rows as their content needs; the image gets the rows that are left
+// on screen (max 7, as in the sketch), so the section still fits the viewport and the cells stay square.
+let G = {};
+function measure() {
+  const W = carousel.clientWidth, H = innerHeight;
+  const lands = matchMedia('(max-height: 520px) and (min-aspect-ratio: 11/10)').matches;
+  const maxW = lands ? Math.min(W * .62, 560) : W < 640 ? Math.min(W * .8, 360) : W < 1024 ? Math.min(W * .52, 440) : Math.min(504, W * .35);
+  const cols = lands ? Math.max(12, Math.round(maxW / 32)) : Math.max(8, Math.round(maxW / 50.4));
+  const st = carousel.style, px = v => v + 'px';
+  const area = (r1, c1, r2, c2) => `${r1} / ${c1} / ${r2} / ${c2}`;
+  const half = Math.floor(cols / 2);
+  const tilt = lands ? 8 : 20;                               // room for the tilted side cards
+  st.setProperty('--cols', cols);
+  st.setProperty('--ctrl-gap', px(lands ? 4 : H < 700 ? 12 : 24));
+  const cs = getComputedStyle(shop), cc = getComputedStyle(carousel), ct = getComputedStyle(cControls);
+  const avail = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - shopHead.offsetHeight
+              - parseFloat(cc.marginTop) - cControls.offsetHeight - parseFloat(ct.marginTop) - tilt;
+
+  // set a cell size and count the rows each part needs at that size
+  let sx = maxW / cols, rows;
+  const apply = sx => {
+    const c = Math.min(1, sx / 50.4);
+    st.setProperty('--sx', px(sx));
+    st.setProperty('--card-w', px(sx * cols));
+    st.setProperty('--title-fs', px(lands ? 21 : Math.max(22, 40 * c)));
+    st.setProperty('--desc-fs', px(c < .8 ? 15 : 16));
+    st.setProperty('--tag-fs', px(c < .8 ? 11.5 : 12));
+    st.setProperty('--btn-fs', px(c < .8 || lands ? 16 : 18));
+    st.setProperty('--box-pad', px(lands ? 3 : Math.max(4, 6 * c)));
+    st.setProperty('--rows', 30);
+    st.setProperty('--g-text', lands ? area(2, half + 1, 'span 2', -2) : area(10, 2, 'span 2', -2));
+    st.setProperty('--g-price', lands ? area(4, half + 1, 'span 1', -2) : area(12, 2, 'span 1', -2));
+    const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sx));
+    let T = 1, P = 1;
+    for (const el of slides) {
+      const t = el.querySelector('.card-text'), pad = parseFloat(getComputedStyle(t).paddingTop);
+      const kids = [...t.children].filter(k => k.offsetParent);
+      const need = kids.reduce((h, k) => h + k.offsetHeight, 0) + 4 * (kids.length - 1) + 2 * pad;
+      T = Math.max(T, rowsFor(need));
+      P = Math.max(P, rowsFor(el.querySelector('.card-price').firstElementChild.offsetHeight + (lands ? 4 : 12)));
+    }
+    if (!lands) T = Math.max(T, 2);
+    // button area: the 48 px button plus room above and, as asked, more room below it
+    return { T, P, top: lands ? 1 : Math.max(2, rowsFor(26 + 24 * c)), B: rowsFor(lands ? 44 : 96) };
+  };
+  // shrink the cells if the screen is too low for the card with at least 6 image rows (4 on phones),
+  // so the cells stay square and the image keeps a decent size instead of the card overflowing
+  const minImg = lands ? 0 : H < 700 ? 4 : 6;
+  for (let k = 0; k < 3; k++) {
+    rows = apply(sx);
+    const need = rows.top + rows.T + rows.P + rows.B + minImg;
+    if (need * sx <= avail + .5) break;
+    sx = Math.max(24, avail / need);
+  }
+  const { T, P, top: topR, B } = rows;
+  const rowsFit = Math.max(1, Math.floor((avail + .5) / sx));
+  let R;
+  if (lands) {
+    R = Math.max(topR + T + P + B, Math.min(rowsFit, 8));
+    st.setProperty('--g-top', area(1, 2, topR + 1, -2));
+    st.setProperty('--g-img', area(topR + 1, 2, R + 1, half + 1));
+    st.setProperty('--g-text', area(topR + 1, half + 1, `span ${T}`, -2));
+    st.setProperty('--g-price', area(topR + T + 1, half + 1, `span ${P}`, -2));
+    st.setProperty('--g-btn', area(topR + T + P + 1, half + 1, `span ${B}`, -2));
+  } else {
+    const imgR = Math.max(2, Math.min(7, rowsFit - topR - T - P - B));
+    R = topR + imgR + T + P + B;
+    st.setProperty('--g-top', area(1, 2, topR + 1, -2));
+    st.setProperty('--g-img', area(topR + 1, 2, topR + imgR + 1, -2));
+    st.setProperty('--g-text', area(topR + imgR + 1, 2, `span ${T}`, -2));
+    st.setProperty('--g-price', area(topR + imgR + T + 1, 2, `span ${P}`, -2));
+    st.setProperty('--g-btn', area(R - B + 1, 1, -1, -1));
+  }
+  st.setProperty('--rows', R);
+  const cardW = sx * cols, cardH = R * sx;
+  st.setProperty('--stage-h', px(cardH + tilt));
+  const peek = W < 640 ? 26 : W < 1024 ? 70 : 140;          // how much of the side cards shows
+  G = { W, cardW, gap: Math.min(cardW * 1.19, W / 2 + cardW / 2 - peek), cardH };
+  render();
+}
+
+function offset(i) {                // signed distance from the active card, wrapping around
+  const n = PRODUCTS.length;
+  let d = ((i - active) % n + n) % n;
+  if (d > n / 2) d -= n;
+  return d;
+}
+function render() {
+  slides.forEach((el, i) => {
+    const d = offset(i), a = Math.abs(d);
+    const rot = Math.max(-1, Math.min(1, d)) * 6;            // side cards tilt 6° away, like the sketch
+    el.style.transform = `translate(${d * G.gap}px, ${Math.min(a, 2) * 14}px) rotate(${rot}deg)`;
+    el.style.opacity = a === 0 ? 1 : a === 1 ? .4 : 0;
+    el.style.zIndex = 10 - a;
+    el.style.pointerEvents = a <= 1 ? 'auto' : 'none';
+    el.classList.toggle('is-active', a === 0);
+    el.querySelector('.card').inert = a !== 0;              // only the front card's link and button can be reached
+    el.querySelector('.slide-hit').tabIndex = a === 1 ? 0 : -1;
+    el.setAttribute('aria-hidden', a > 1);
+    // build-in: the front card rises, the side cards swing in from outside
+    el.style.setProperty('--build-delay', a === 0 ? '200ms' : a === 1 ? '420ms' : '0ms');
+    el.style.setProperty('--from-x', d < 0 ? '-180px' : d > 0 ? '180px' : '0px');
+    el.style.setProperty('--from-r', d < 0 ? '-14deg' : d > 0 ? '14deg' : '0deg');
+  });
+  dots.forEach((b, i) => b.setAttribute('aria-current', i === active));
+}
+
+function go(i, dir = 1) {
+  const n = PRODUCTS.length;
+  active = ((i % n) + n) % n;
+  render();
+  const p = PRODUCTS[active];
+  cLive.textContent = `${p.title}, ${nok(p.price)}${p.soldOut ? ', utsolgt' : ''}. ${active + 1} av ${n}.`;
+  rainScene();
+}
+document.getElementById('cPrev').addEventListener('click', () => go(active - 1, -1));
+document.getElementById('cNext').addEventListener('click', () => go(active + 1, 1));
+carousel.addEventListener('keydown', e => {
+  if (e.target.closest('.card')) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1, -1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1, 1); }
+});
+let dragX = null, dragMoved = false;
+cStage.addEventListener('pointerdown', e => { dragX = e.clientX; dragMoved = false; });
+addEventListener('pointermove', e => { if (dragX !== null && Math.abs(e.clientX - dragX) > 10) dragMoved = true; });
+addEventListener('pointerup', e => {
+  if (dragX === null) return;
+  const dx = e.clientX - dragX; dragX = null;
+  if (Math.abs(dx) > 40) go(active + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+  setTimeout(() => { dragMoved = false; }, 0);
+});
+
+// ------------------------------------------------------------- what rains around the card
+// Coffee: beans. Chocolate: pieces of that chocolate. Each time a card lands, a new set is drawn
+// at new places, sizes and blur, and falls in from above. The old set keeps falling and leaves at the bottom.
+function beanSrc(f) { return `frames/bonne-800/bonne_${String(f).padStart(3, '0')}.webp`; }
+const BEAN_FRAMES = [12, 20, 33, 45, 55, 70, 88, 95, 101, 115, 130, 140, 148];
+const FLOATERS = {
+  'karamell-salt':     ['assets/flyt/karamell.webp'],
+  'konfekt-hjertemix': ['assets/flyt/konfekt-1.webp', 'assets/flyt/konfekt-2.webp', 'assets/flyt/konfekt-3.webp'],
+  'mintkonfekt':       ['assets/flyt/mint.svg'],
+};
+Object.values(FLOATERS).flat().forEach(src => { const i = new Image(); i.src = src; });
+const rnd = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const PAR = { far: .06, mid: .16, hero: .3 };
+let live = [];
+
+function makeScene() {
+  const p = PRODUCTS[active], set = FLOATERS[p.id], mocca = p.id === 'moccabonner';
+  const sw = shop.clientWidth, sh = shop.clientHeight;
+  const top = carousel.offsetTop + cStage.offsetTop;
+  const cw = G.cardW, ch = G.cardH, cl = sw / 2 - cw / 2;
+  const base = Math.min(cw, ch * .85);                       // keeps the beans in scale on low, wide cards
+  const side = Math.random() < .5 ? 1 : -1;                  // which side the big one sits on
+  const im = slides[active].querySelector('.card-img'), imTop = top + im.offsetTop, imH = im.offsetHeight;
+  const L = cl, R = cl + cw, other = -side;
+  const edge = (sd, s, inside, outside) => sd > 0 ? R - s * rnd(inside, outside) : L - s * (1 - rnd(inside, outside));
+  const items = [];
+  // as in the sketch, everything hugs the card: each piece overlaps or touches an edge
+  // 1. big and sharp, half over the card edge, level with the product image
+  const hs = base * rnd(.36, .48);
+  items.push({ depth: 'hero', layer: 'beansFront', size: hs, blur: 0, op: 1,
+    x: edge(side, hs, .35, .5), y: imTop + Math.max(0, imH - hs * .9) * rnd(.15, .85) - hs * .1 });
+  // 2. soft one on the opposite top corner
+  const m1 = base * rnd(.16, .24);
+  items.push({ depth: 'mid', layer: Math.random() < .6 ? 'beansFront' : 'beansBack', size: m1, blur: rnd(2.5, 4), op: rnd(.85, 1),
+    x: edge(other, m1, .3, .6), y: top - m1 * rnd(.25, .55) });
+  // 3. small, slightly soft, near the top on the hero side
+  const m2 = base * rnd(.1, .16);
+  items.push({ depth: 'mid', layer: 'beansBack', size: m2, blur: rnd(.5, 1.5), op: rnd(.65, .85),
+    x: edge(side, m2, .1, .5), y: top + ch * rnd(.04, .18) });
+  // 4. low on the opposite side, behind the card edge
+  const m3 = base * rnd(.1, .15);
+  items.push({ depth: 'mid', layer: 'beansBack', size: m3, blur: rnd(1, 2.5), op: rnd(.6, .85),
+    x: edge(other, m3, .2, .6), y: top + ch * rnd(.58, .8) });
+  // 5. a couple of tiny soft ones just outside the card
+  for (let n = 0; n < 2; n++) {
+    const sd = n ? side : other, s = base * rnd(.05, .08);
+    items.push({ depth: 'far', layer: 'beansBack', size: s, blur: rnd(1.5, 3), op: rnd(.4, .6), dim: true,
+      x: sd > 0 ? R + cw * rnd(.04, .16) : L - cw * rnd(.04, .16) - s, y: top + ch * rnd(.2, .9) });
+  }
+  return items.map(it => {
+    const size = it.size * (set ? .85 : 1);
+    const el = document.createElement('div');
+    el.className = 'bean-p'; el.dataset.depth = it.depth;
+    el.style.cssText = `left:${it.x}px;top:${it.y}px;width:${size}px;`;
+    el.dataset.y = it.y; el.dataset.s = size;
+    const tone = mocca ? 'brightness(.42) saturate(.55) contrast(1.25) ' : '';
+    el.innerHTML = `<div class="bean-mv"><img alt="" src="${set ? pick(set) : beanSrc(pick(BEAN_FRAMES))}"
+      style="rotate:${rnd(-180, 180).toFixed(0)}deg;filter:${tone}blur(${it.blur.toFixed(1)}px)${it.dim ? ' brightness(.7)' : ''};opacity:${it.op.toFixed(2)};
+      --dur:${rnd(5, 9).toFixed(1)}s;--del:-${rnd(0, 6).toFixed(1)}s;--fy:${rnd(5, 12).toFixed(0)}px"></div>`;
+    document.getElementById(it.layer).appendChild(el);
+    return el;
+  });
+}
+
+// short, soft drop into place: at most 200 px of travel, every piece its own distance, timing and spin
+function rainIn(el, base) {
+  const dist = rnd(110, 200), spin = rnd(-35, 35);
+  return el.firstElementChild.animate([
+    { transform: `translateY(${-dist}px) rotate(${spin}deg)`, opacity: 0 },
+    { opacity: 1, offset: .45 },
+    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+  ], { duration: rnd(480, 640), delay: base + rnd(0, 160), easing: 'cubic-bezier(.22, .9, .32, 1)', fill: 'both' });
+}
+// the old set drops a little further and fades, quickly
+function rainOut(el) {
+  return el.firstElementChild.animate([
+    { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+    { transform: `translateY(${rnd(110, 200)}px) rotate(${rnd(-30, 30)}deg)`, opacity: 0 },
+  ], { duration: rnd(280, 380), delay: rnd(0, 70), easing: 'cubic-bezier(.5, 0, .8, .45)', fill: 'both' });
+}
+
+function rainScene(base = 380) {                 // starts while the new card settles, so the pause stays short
+  const old = live; live = makeScene(); parallax();
+  if (reduce) { old.forEach(el => el.remove()); return; }
+  old.forEach(el => rainOut(el).finished.then(() => el.remove(), () => el.remove()));
+  live.forEach(el => rainIn(el, base));
+}
+
+function parallax() {
+  if (reduce) return;
+  const r = shop.getBoundingClientRect();
+  if (r.bottom < -200 || r.top > innerHeight + 200) return;
+  const off = (r.top + r.height / 2) - innerHeight / 2;
+  for (const el of shop.querySelectorAll('.bean-p')) el.style.transform = `translateY(${-off * PAR[el.dataset.depth]}px)`;
+}
+addEventListener('scroll', parallax, { passive: true });
+
+// ------------------------------------------------------------- build-in on first view
+let built = false;
+const build = () => { built = true; shop.classList.add('is-built'); rainScene(900); };
+if (reduce || !('IntersectionObserver' in window)) build();
+else new IntersectionObserver((entries, io) => {
+  if (entries.some(e => e.isIntersecting)) { build(); io.disconnect(); }
+}, { threshold: .22 }).observe(shop);
+
+let rT;
+addEventListener('resize', () => {
+  measure();
+  clearTimeout(rT);
+  rT = setTimeout(() => { if (built) { live.forEach(el => el.remove()); live = makeScene(); parallax(); } }, 200);
+});
+measure(); parallax();
+document.fonts && document.fonts.ready.then(measure);
 </script>
 </body>
 </html>
