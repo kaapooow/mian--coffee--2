@@ -282,7 +282,9 @@
                    mask: linear-gradient(180deg, #000 70%, transparent) 0 0 / 100% 145% no-repeat; }
   .intro-wait .hgrid { -webkit-mask-size: 100% 0%; mask-size: 100% 0%; }
   .intro-wait .site-header { transform: translateY(-100%); }
-  .intro-wait .intro h1, .intro-wait .intro p, .intro-wait .intro .actions > *, .intro-wait #layers { opacity: 0; }
+  .intro-wait .intro h1, .intro-wait .intro p, .intro-wait .intro .actions > * { opacity: 0; }
+  .intro-wait #layers .bag { translate: 0 -1600px; }   /* stage px; the bags drop in from above the window */
+  .intro-wait #layers .bean { scale: 0; }
   .shop:not(.is-built) .slide-inner { opacity: 0; transform: translate(var(--from-x, 0), 90px) rotate(var(--from-r, 0deg)) scale(.9); }
   .shop:not(.is-built) .c-controls { opacity: 0; }
   .c-controls { transition: opacity .7s ease .9s; }
@@ -808,7 +810,7 @@ hideTitle(intro.querySelector('h1'));
 // load sequence, all done within 3 s:
 //   0–1.2 s   grid draws from the top down, header slides in at the same time
 //   0.8–2.3 s headline letters fly in, then lead and buttons
-//   1.0–2.4 s bags and beans rise into place
+//   0.85–2.2 s bags drop in from above, left to right, then the beans pop in (done by 2.6 s)
 function playIntro() {
   const root = document.documentElement, h1 = intro.querySelector('h1');
   if (!root.classList.contains('intro-wait')) { revealTitle(h1); return; }     // reduced motion: just show it
@@ -820,7 +822,12 @@ function playIntro() {
   anim(intro.querySelector('p'), [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], 1300, 700);
   intro.querySelectorAll('.actions > *').forEach((b, i) =>
     anim(b, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], 1500 + i * 120, 650));
-  anim(layers, [{ opacity: 0, transform: 'translateY(48px)' }, { opacity: 1, transform: 'none' }], 1000, 1400);
+  // bags drop in from above, left to right (front bag, middle, back), with a small overshoot when they land
+  const bounce = 'cubic-bezier(.3, 1.28, .55, 1)';
+  [bag, back2, back3].forEach((c, i) =>
+    anim(c.el, [{ translate: '0 -1600px' }, { translate: '0 0' }], 850 + i * 160, 1050, bounce));
+  // then the beans pop in around them
+  beans.forEach((c, i) => anim(c.el, [{ scale: 0 }, { scale: 1 }], 1600 + i * 40, 500, 'cubic-bezier(.34, 1.56, .64, 1)'));
   root.classList.remove('intro-wait');           // the animations above now hold the start state
 }
 // start when the fonts are in (so the headline is measured right), but never wait more than 0.4 s
