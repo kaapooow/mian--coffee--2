@@ -10,7 +10,8 @@
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --green: #81E390;
+    --green: #2A4B2F;          /* hero background (dark green, from the sketch) */
+    --green-light: #81E390;    /* hero headline, logo and menu on the dark green */
     --brown: #2C0F07;
     --ink: #2C0F07;
     --pink: #F67DFF;
@@ -53,7 +54,7 @@
           background: var(--btn-dark); color: #fff; font-weight: 600; }
   .skip:focus { top: 12px; }
   /* solid bar in the page colour, so the bag and beans pass under it instead of over the logo and links */
-  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--ink)); background: var(--hdr-bg, var(--green)); }
+  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light)); background: var(--hdr-bg, var(--green)); }
   .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
@@ -102,8 +103,8 @@
                    display: flex; flex-direction: column; align-items: flex-start; }
   .intro a, .outro a { pointer-events: auto; }
   .intro h1, .outro h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; line-height: 1; text-wrap: balance; }
-  .intro h1 { font-size: clamp(40px, 11vw, 88px); }
-  .intro p { margin-top: 16px; max-width: 22em; font-weight: 500; font-size: clamp(17px, 1.6vw + 10px, 24px); line-height: 1.5; }
+  .intro h1 { font-size: clamp(40px, 11vw, 88px); color: var(--green-light); }
+  .intro p { margin-top: 16px; max-width: 22em; color: #fff; font-weight: 500; font-size: clamp(17px, 1.6vw + 10px, 24px); line-height: 1.5; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
   .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--pink-light); }
   .outro h2 span { display: block; white-space: nowrap; }
@@ -252,7 +253,7 @@
     .slide, .slide-inner, .shop-head h2, .c-controls, .card::after, .dot::before { transition-duration: .01s !important; transition-delay: 0s !important; }
   }
 
-  .loader { position: fixed; left: 16px; bottom: 14px; font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
+  .loader { position: fixed; left: 16px; bottom: 14px; color: var(--green-light); font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
   .end { height: 0; }
   @media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }
 </style>
@@ -262,7 +263,7 @@
 <header class="site-header" id="header">
   <div class="container header-inner">
     <a class="logo" href="#" aria-label="Mian Coffee, til forsiden">
-      <span class="mark"><img src="assets/logo-mark.svg" alt="" id="logoDark"><img src="assets/logo-mark-rosa.svg" alt="" id="logoPink" style="opacity:0"></span>
+      <span class="mark"><img src="assets/logo-mark-gronn.svg" alt="" id="logoDark"><img src="assets/logo-mark-rosa.svg" alt="" id="logoPink" style="opacity:0"></span>
       <span>Mian Coffee</span>
     </a>
     <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="nav">
@@ -435,7 +436,7 @@ const outro = document.getElementById('outro'), outroH = document.getElementById
 const header = document.getElementById('header');
 const logoDark = document.getElementById('logoDark'), logoPink = document.getElementById('logoPink');
 const swirl = document.getElementById('swirlPath');
-const GREEN = [129, 227, 144], BROWN = [44, 15, 7], INK = [44, 15, 7], PINK = [246, 125, 255];
+const GREEN = [42, 75, 47], BROWN = [44, 15, 7], INK = [129, 227, 144], PINK = [246, 125, 255];   // INK: light green header text on the dark green
 
 // ---------------------------------------------------------------- layout
 // Wide screens show the whole stage, fitted and centred, with the copy in a left column.
