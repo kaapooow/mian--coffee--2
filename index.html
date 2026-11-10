@@ -113,7 +113,8 @@
   .intro a, .outro a { pointer-events: auto; }
   .intro h1, .outro h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; line-height: 1; text-wrap: balance; }
   .intro h1 { font-size: clamp(40px, 11vw, 88px); color: var(--green-light); }
-  .intro p { margin-top: 16px; max-width: 22em; color: #fff; font-weight: 500; font-size: clamp(17px, 1.6vw + 10px, 24px); line-height: 1.5; }
+  .intro p { margin-top: 16px; max-width: 22em; color: #fff; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; }   /* 25% under the sketch */
+  .intro .btn--dark { background: #000; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
   .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--pink-light); }
   .outro h2 span { display: block; white-space: nowrap; }
@@ -458,6 +459,7 @@ const wideMQ = matchMedia('(min-width: 640px) and (min-aspect-ratio: 11/10)');
 let L = {};
 function layout() {
   const W = innerWidth, H = innerHeight;
+  placeIntro();
   const bottom = el => el.offsetTop + el.offsetHeight;      // ignores transforms, so it is stable while scrolling
   const introB = bottom(intro), outroB = bottom(outro);
   // wide: where the intro text really ends, so the bag (left edge ~715, right edge of the back bags ~1330 on the stage) never covers it
@@ -508,6 +510,35 @@ function contentRect(el) {
   return { left: Math.min(...v.map(r => r.left)), top: Math.min(...v.map(r => r.top)),
            right: Math.max(...v.map(r => r.right)), bottom: Math.max(...v.map(r => r.bottom)) };
 }
+// Hero copy box: 5 columns wide starting in column 2, as many rows as the copy needs plus 24 px
+// padding all round. The copy sits inside it. Centred in the height on wide screens, right under
+// the header on narrow ones. The headline shrinks if it would not fit the 5 columns.
+const PAD = 24;
+function placeIntro() {
+  const { gx, gy } = gridCells();
+  root.style.setProperty('--gx', gx + 'px'); root.style.setProperty('--gy', gy + 'px');
+  const vp = document.querySelector('.viewport').getBoundingClientRect();
+  const cont = intro.parentElement.getBoundingClientRect();
+  const cols = Math.min(5, Math.round(innerWidth / gx) - 1), boxW = cols * gx, inner = boxW - 2 * PAD;
+  Object.assign(intro.style, { left: gx + PAD - (cont.left - vp.left) + 'px', right: 'auto', width: inner + 'px', transform: 'none' });
+  // headline: the CSS size, or smaller if its longest line would not fit
+  const h1 = intro.querySelector('h1');
+  h1.style.fontSize = '';
+  const fs = parseFloat(getComputedStyle(h1).fontSize);
+  const rg = document.createRange(); rg.selectNodeContents(h1);
+  const widest = Math.max(...[...rg.getClientRects()].map(r => r.width));
+  if (widest > inner) h1.style.fontSize = Math.floor(fs * inner / widest) + 'px';
+  // rows: copy height plus padding; start row under the header
+  const t0 = intro.style.translate; intro.style.translate = '0 0';
+  const rows = Math.ceil((intro.offsetHeight + 2 * PAD) / gy);
+  const minRow = Math.ceil(header.offsetHeight / gy);
+  const total = Math.round(innerHeight / gy);
+  const row = wideMQ.matches ? Math.max(minRow, Math.round((total - rows) / 2)) : minRow;
+  // whole rows leave some extra height: split it evenly above and below, so the padding is at least 24 px all round
+  intro.style.top = row * gy + (rows * gy - intro.offsetHeight) / 2 - (cont.top - vp.top) + 'px';
+  intro.style.translate = t0;
+  Object.assign(holeIntro.style, { left: gx + 1 + 'px', top: row * gy + 1 + 'px', width: boxW - 1 + 'px', height: rows * gy - 1 + 'px' });
+}
 function layoutGrid() {
   const { gx, gy } = gridCells();
   root.style.setProperty('--gx', gx + 'px'); root.style.setProperty('--gy', gy + 'px');
@@ -515,7 +546,6 @@ function layoutGrid() {
   // measure the copy where it rests (without the scroll-driven drift and fade-in offsets)
   const t1 = intro.style.translate, t2 = outroH.style.transform, t3 = outroA.style.transform;
   intro.style.translate = '0 0'; outroH.style.transform = outroA.style.transform = 'none';
-  snapHole(holeIntro, contentRect(intro), vp.left, vp.top, gx, gy);
   snapHole(holeOutro, contentRect(outro), vp.left, vp.top, gx, gy);
   intro.style.translate = t1; outroH.style.transform = t2; outroA.style.transform = t3;
 }
