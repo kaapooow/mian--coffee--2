@@ -275,6 +275,14 @@
   .tw { display: inline-block; white-space: nowrap; }
   .ch { display: inline-block; }
   .reveal-wait .ch { opacity: 0; }
+
+  /* page-load sequence (under 3 s): the grid draws from the top down while the header slides in,
+     then the headline, lead, buttons and the bags build up. .intro-wait holds everything back until the JS starts it. */
+  .hgrid { -webkit-mask: linear-gradient(180deg, #000 70%, transparent) 0 0 / 100% 145% no-repeat;
+                   mask: linear-gradient(180deg, #000 70%, transparent) 0 0 / 100% 145% no-repeat; }
+  .intro-wait .hgrid { -webkit-mask-size: 100% 0%; mask-size: 100% 0%; }
+  .intro-wait .site-header { transform: translateY(-100%); }
+  .intro-wait .intro h1, .intro-wait .intro p, .intro-wait .intro .actions > *, .intro-wait #layers { opacity: 0; }
   .shop:not(.is-built) .slide-inner { opacity: 0; transform: translate(var(--from-x, 0), 90px) rotate(var(--from-r, 0deg)) scale(.9); }
   .shop:not(.is-built) .c-controls { opacity: 0; }
   .c-controls { transition: opacity .7s ease .9s; }
@@ -288,6 +296,13 @@
   .end { height: 0; }
   @media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }
 </style>
+<script>
+  // hold the hero back until the load sequence starts; never longer than 4 s, even if a script fails
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('intro-wait');
+    setTimeout(() => document.documentElement.classList.remove('intro-wait'), 4000);
+  }
+</script>
 </head>
 <body>
 <a class="skip" href="#main">Hopp til innhold</a>
@@ -790,7 +805,26 @@ document.fonts && document.fonts.ready.then(layout);   // text heights change on
 // hero title flies in when the page opens; the last-frame title waits for its moment
 hideTitle(outroH);
 hideTitle(intro.querySelector('h1'));
-(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => setTimeout(() => revealTitle(intro.querySelector('h1')), 150));
+// load sequence, all done within 3 s:
+//   0–1.2 s   grid draws from the top down, header slides in at the same time
+//   0.8–2.3 s headline letters fly in, then lead and buttons
+//   1.0–2.4 s bags and beans rise into place
+function playIntro() {
+  const root = document.documentElement, h1 = intro.querySelector('h1');
+  if (!root.classList.contains('intro-wait')) { revealTitle(h1); return; }     // reduced motion: just show it
+  const out = 'cubic-bezier(.22, 1, .36, 1)';
+  const anim = (el, kf, delay, duration, easing = out) => el && el.animate(kf, { delay, duration, easing, fill: 'backwards' });
+  anim(document.querySelector('.hgrid'), [{ maskSize: '100% 0%', webkitMaskSize: '100% 0%' }, { maskSize: '100% 145%', webkitMaskSize: '100% 145%' }], 0, 1200, 'cubic-bezier(.45, 0, .2, 1)');
+  anim(header, [{ transform: 'translateY(-100%)' }, { transform: 'none' }], 100, 800);
+  revealTitle(h1, 800);
+  anim(intro.querySelector('p'), [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], 1300, 700);
+  intro.querySelectorAll('.actions > *').forEach((b, i) =>
+    anim(b, [{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], 1500 + i * 120, 650));
+  anim(layers, [{ opacity: 0, transform: 'translateY(48px)' }, { opacity: 1, transform: 'none' }], 1000, 1400);
+  root.classList.remove('intro-wait');           // the animations above now hold the start state
+}
+// start when the fonts are in (so the headline is measured right), but never wait more than 0.4 s
+Promise.race([document.fonts ? document.fonts.ready : Promise.resolve(), new Promise(r => setTimeout(r, 400))]).then(playIntro);
 layout();
 requestAnimationFrame(frame);
 </script>
