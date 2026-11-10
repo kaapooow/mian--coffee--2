@@ -1,9 +1,10 @@
-# Static site: no build step, publish the repo root.
-# The project was once set up as Next.js in the Netlify UI. This is plain HTML, so the
-# Next.js runtime must not run (it fails looking for a ".next" folder).
+# Static site (plain HTML/CSS/JS, no framework).
+# The project was once set up as Next.js in the Netlify UI. These settings override that:
+# no Next.js runtime, and only the files the site needs are published. Blender files,
+# scripts and Netlify's own .netlify folder are left out.
 [build]
-  command = "echo 'Static site – no build step'"
-  publish = "."
+  command = "rm -rf dist && mkdir dist && cp -R index.html assets frames dist/"
+  publish = "dist"
 
 [build.environment]
   NETLIFY_NEXT_PLUGIN_SKIP = "true"
