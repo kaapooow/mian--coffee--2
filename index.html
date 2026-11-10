@@ -105,16 +105,17 @@
   .intro h1 { font-size: clamp(40px, 11vw, 88px); }
   .intro p { margin-top: 16px; max-width: 22em; font-weight: 500; font-size: clamp(17px, 1.6vw + 10px, 24px); line-height: 1.5; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .outro h2 { font-size: clamp(48px, 14vw, 104px); line-height: .95; color: var(--pink-light); }
-  .outro h2 span { display: block; }
+  .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--pink-light); }
+  .outro h2 span { display: block; white-space: nowrap; }
+  .baseline { display: inline-block; width: 0; height: 0; vertical-align: baseline; }   /* marks where the last word sits */
   .outro { opacity: 0; visibility: hidden; }
 
   /* wide screens (desktop and landscape tablets): text in a left column, vertically centred */
   @media (min-width: 640px) and (min-aspect-ratio: 11/10) {
     .intro { top: calc(50% + var(--header-h) / 2); right: auto; width: min(46%, 640px); transform: translateY(-50%); }
     .intro h1 { font-size: clamp(44px, min(7.6vw, 11.5vh), 116px); }
-    .outro { top: max(calc(var(--header-h) + 24px), 18vh); right: auto; width: min(60%, 820px); }
-    .outro h2 { font-size: clamp(56px, min(10vw, 15vh), 152px); }
+    .outro { top: max(calc(var(--header-h) + 24px), 18vh); right: auto; width: auto; }
+    .outro h2 { font-size: clamp(56px, min(9vw, 15vh), 140px); }
     .outro .actions { flex-direction: column; margin-top: 32px; }
   }
   @media (min-width: 1024px) { .actions { gap: 16px; margin-top: 32px; } }
@@ -297,8 +298,8 @@
           </div>
         </section>
 
-        <section class="outro" id="outro" aria-label="Søt, rund, balansert">
-          <h2 id="outroH"><span>Søt, rund</span><span>balansert</span></h2>
+        <section class="outro" id="outro" aria-label="Søt, rund og balansert">
+          <h2 id="outroH"><span>Søt, rund og</span><span>balansert<i class="baseline" id="outroBase" aria-hidden="true"></i></span></h2>
           <div class="actions" id="outroA">
             <a class="btn btn--dark" href="#">Finn din kaffe <img src="assets/ikon-kopp.svg" alt=""></a>
             <a class="btn btn--white" href="#">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
@@ -460,7 +461,22 @@ function layout() {
         s2: Math.min((H - 64) / 980, W / 720, 1),
         y1: introB + (H - introB) / 2,
         y6: outroB + (H - outroB) / 2 };
+  L.beanDy = lastFrameDrop();
   dirty = true;
+}
+// Last frame: move all the beans down so the bean over the headline (BEANS[6]) only pokes ~8 px up
+// into the last word. Worked out from where the word really sits, so it holds at every screen size.
+// Only ever moves them down; on narrow screens the beans already sit below the text.
+function lastFrameDrop() {
+  if (!L.wide) return 0;
+  const vp = document.querySelector('.viewport').getBoundingClientRect().top;
+  const t = outroH.style.transform; outroH.style.transform = 'none';
+  const base = document.getElementById('outroBase').getBoundingClientRect().top - vp;   // baseline of "balansert"
+  outroH.style.transform = t;
+  const s = L.fit, ty = (L.H - 1016 * s) / 2;
+  const [, , , , b6] = BEANS[6], size = b6[2] * S / BEAN_FILL;
+  const beanTop = ty + (b6[1] * S - size * .25) * s;          // visible top of that bean (~25% of its frame above centre)
+  return Math.max(0, (base - 8 - beanTop) / s);
 }
 function placeStage(p) {
   let s, tx, ty;
@@ -539,7 +555,7 @@ function frame() {
     const first = s3 || [lerp(from[0], s4[0], 0.5), lerp(from[1], s4[1], 0.5), s4[2] * 0.7];
     const keysFor = k => {
       const ks = [[out, from[k]], [K[2] + 0.02 + (s3 ? 0 : 0.04), first[k]], [K[3], s4[k]], [K[4], s5[k]]];
-      if (s6) ks.push([K[5], s6[k]]);
+      if (s6) ks.push([K[5], s6[k] + (k === 1 ? L.beanDy || 0 : 0)]);
       else ks.push([K[5], s5[k] + (k === 1 ? -60 : 0)]);
       return ks;
     };
