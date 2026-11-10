@@ -1,5 +1,9 @@
 # Static site: no build step, publish the repo root.
-# Overrides the Next.js build settings configured in the Netlify UI.
+# The project was once set up as Next.js in the Netlify UI. This is plain HTML, so the
+# Next.js runtime must not run (it fails looking for a ".next" folder).
 [build]
   command = "echo 'Static site – no build step'"
   publish = "."
+
+[build.environment]
+  NETLIFY_NEXT_PLUGIN_SKIP = "true"
