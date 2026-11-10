@@ -1,6 +1,6 @@
 # Mian Coffee
 
-Nettsiden til Mian Coffee: en scroll-styrt hero der kaffeposen og bønnene er rendret i Blender, og en nettbutikk-karusell med produktkort. Ren HTML, CSS og JavaScript i én fil, uten byggesteg. Netlify publiserer rotmappen (se `netlify.toml`).
+Nettsiden til Mian Coffee: en scroll-styrt hero der kaffeposen og bønnene er rendret i Blender, og en nettbutikk-karusell med produktkort. Ren HTML, CSS og JavaScript i én fil, uten rammeverk. Ved deploy kopierer Netlify `index.html`, `assets/` og `frames/` til `dist/` og publiserer bare den mappen (se `netlify.toml`).
 
 ## Kjør lokalt
 
