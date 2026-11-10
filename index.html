@@ -43,9 +43,15 @@
   .stage { position: absolute; left: 0; top: 0; width: 1528px; height: 1016px; transform-origin: 0 0; pointer-events: none; }
   .stage--back { z-index: 1; }
   .stage--front { z-index: 3; }
-  .grid { position: absolute; left: 0; top: 0; width: 1584px; height: 1120px; opacity: .04; pointer-events: none;
-          background-image: linear-gradient(var(--brown) 1px, transparent 1px), linear-gradient(90deg, var(--brown) 1px, transparent 1px);
-          background-size: 112px 112px; }
+  /* Grid on every section. Cells are as square as possible with a whole number of cells across the
+     viewport's width and height (about 112 px on a 1528 px wide screen); JS sets --gx and --gy.
+     --grid is the line colour: #315737 on the green hero, #31160F on brown. --bg is the current page colour. */
+  :root { --gx: 112px; --gy: 112px; --grid: #315737; --bg: var(--green); }
+  .gridlines { background-image: linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(180deg, var(--grid) 1px, transparent 1px);
+               background-size: var(--gx) var(--gy); }
+  .hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+  /* no grid behind headline, lead and buttons: whole cells are cleared around them */
+  .hole { position: absolute; left: 0; top: 0; width: 0; height: 0; background: var(--bg); pointer-events: none; }
 
   .container { width: 100%; max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
 
@@ -54,7 +60,10 @@
           background: var(--btn-dark); color: #fff; font-weight: 600; }
   .skip:focus { top: 12px; }
   /* solid bar in the page colour, so the bag and beans pass under it instead of over the logo and links */
-  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light)); background: var(--hdr-bg, var(--green)); }
+  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light));
+                 background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                             linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                             var(--hdr-bg, var(--green)); }
   .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
@@ -134,7 +143,9 @@
   /* ================================================================ shop: product card carousel */
   /* One screen tall, starts under the fixed header. Card and image size are worked out in JS
      from the space that is left, so the whole carousel always fits the viewport. */
-  .shop { position: relative; z-index: 1; background: var(--brown); color: var(--pink-light);
+  .shop { position: relative; z-index: 1; color: var(--pink-light); --grid: #31160F; --bg: var(--brown);
+          background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--brown);
           min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
           padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(12px, 2.5vh, 32px);
           overflow: clip; isolation: isolate; }
@@ -281,8 +292,8 @@
 <main id="main">
 <div class="scroll">
   <div class="viewport">
+    <div class="hgrid gridlines" aria-hidden="true"><div class="hole" id="holeIntro"></div><div class="hole" id="holeOutro"></div></div>
     <div class="stage stage--back" id="stageBack" aria-hidden="true">
-      <div class="grid"></div>
       <svg class="swirl" viewBox="0 0 1407 585" fill="none" aria-hidden="true">
         <path id="swirlPath" opacity="0.3" pathLength="1" d="M75 509.888C75 379.14 283.255 114.601 426.072 110.87C565.77 107.221 347.774 403.624 485.344 409.226C493.493 409.558 505.838 401.152 547.058 361.293C635.741 275.541 733.004 120.065 852.836 75.7054C892.347 61.0792 830.084 279.722 831.507 289.859C833.314 302.736 1274.99 95.8296 1331.66 81.9665" stroke-width="150" stroke-linecap="round" stroke-linejoin="bevel" stroke="#F67DFF" stroke-dasharray="1 1" stroke-dashoffset="1"/>
       </svg>
@@ -317,6 +328,7 @@
 <div class="end"></div>
 
 <section class="shop" id="shop" aria-labelledby="shopTitle">
+  <div class="hole" id="holeShop" aria-hidden="true"></div>
   <div class="beans beans--back" id="beansBack" aria-hidden="true"></div>
   <div class="container">
     <div class="shop-head">
@@ -463,7 +475,36 @@ function layout() {
         y1: introB + (H - introB) / 2,
         y6: outroB + (H - outroB) / 2 };
   L.beanDy = lastFrameDrop();
+  layoutGrid();
   dirty = true;
+}
+// Grid cells: about 112 px on a 1528 px wide screen (56–120 px), a whole number of cells across both
+// the width and the height of the viewport, so they end up as square as possible.
+const root = document.documentElement;
+const holeIntro = document.getElementById('holeIntro'), holeOutro = document.getElementById('holeOutro');
+function gridCells() {
+  const W = innerWidth, H = innerHeight;
+  const cols = Math.max(4, Math.round(W / Math.max(56, Math.min(120, W / 13.6))));
+  const gx = W / cols, rows = Math.max(4, Math.round(H / gx));
+  return { gx, gy: H / rows };
+}
+// clear whole cells around an element's content; box = its rect relative to the grid's origin
+function snapHole(hole, r, ox, oy, gx, gy) {
+  const l = Math.floor((r.left - ox) / gx) * gx, t = Math.floor((r.top - oy) / gy) * gy;
+  const rr = Math.ceil((r.right - ox) / gx) * gx, b = Math.ceil((r.bottom - oy) / gy) * gy;
+  Object.assign(hole.style, { left: l + 1 + 'px', top: t + 1 + 'px', width: rr - l - 1 + 'px', height: b - t - 1 + 'px' });
+}
+function contentRect(el) { const rg = document.createRange(); rg.selectNodeContents(el); return rg.getBoundingClientRect(); }
+function layoutGrid() {
+  const { gx, gy } = gridCells();
+  root.style.setProperty('--gx', gx + 'px'); root.style.setProperty('--gy', gy + 'px');
+  const vp = document.querySelector('.viewport').getBoundingClientRect();
+  // measure the copy where it rests (without the scroll-driven drift and fade-in offsets)
+  const t1 = intro.style.translate, t2 = outroH.style.transform, t3 = outroA.style.transform;
+  intro.style.translate = '0 0'; outroH.style.transform = outroA.style.transform = 'none';
+  snapHole(holeIntro, contentRect(intro), vp.left, vp.top, gx, gy);
+  snapHole(holeOutro, contentRect(outro), vp.left, vp.top, gx, gy);
+  intro.style.translate = t1; outroH.style.transform = t2; outroA.style.transform = t3;
 }
 // Last frame: move all the beans down so the bean over the headline (BEANS[6]) only pokes ~8 px up
 // into the last word. Worked out from where the word really sits, so it holds at every screen size.
@@ -519,6 +560,8 @@ function frame() {
   const dark = clamp((p - K[2] - 0.05) / (K[3] - K[2] - 0.07));
   const bg = rgb(mix(GREEN, BROWN, E.io(dark)));
   document.documentElement.style.background = bg; document.body.style.background = bg;
+  root.style.setProperty('--bg', bg);
+  root.style.setProperty('--grid', rgb(mix([49, 87, 55], [49, 22, 15], E.io(dark))));   // #315737 on green → #31160F on brown
   header.style.setProperty('--hdr', rgb(mix(INK, PINK, E.io(dark))));
   header.style.setProperty('--hdr-bg', bg);
   logoPink.style.opacity = E.io(dark); logoDark.style.opacity = 1 - E.io(dark);
@@ -529,6 +572,7 @@ function frame() {
   intro.style.translate = `0 ${tr(p, [[K[0], 0], [K[1], -24], [K[2], -160]])}px`;
   const io = tr(p, [[K[1], 1], [K[2], 0.32], [K[2] + 0.06, 0]]);
   intro.style.opacity = io; intro.style.visibility = io > 0.01 ? 'visible' : 'hidden';
+  holeIntro.style.opacity = io;              // the grid comes back as the copy leaves
 
   // the two neutral bags behind slide out to the right
   place(back2, tr(p, [[K[0], 1128], [K[1], 1283], [K[2], 2250]]), 529, NEUTRAL2);
@@ -581,6 +625,7 @@ function frame() {
   swirl.style.visibility = p >= K[4] - 0.005 ? 'visible' : 'hidden';
   const oi = clamp((p - K[4] - 0.08) / (K[5] - K[4] - 0.08));
   outro.style.opacity = E.out(oi);
+  holeOutro.style.opacity = E.out(oi);
   outroH.style.transform = `translateY(${(1 - E.out(oi)) * 40}px)`;
   outroA.style.transform = `translateY(${(1 - E.out(oi)) * 24}px)`;
   outro.style.visibility = oi > 0 ? 'visible' : 'hidden';
@@ -745,6 +790,9 @@ function measure() {
   st.setProperty('--stage-h', px(cardH + tilt));
   const peek = W < 640 ? 26 : W < 1024 ? 70 : 140;          // how much of the side cards shows
   G = { W, cardW, gap: Math.min(cardW * 1.19, W / 2 + cardW / 2 - peek), cardH };
+  // no grid behind the section title (the shop grid starts at the section's top left)
+  const sr = shop.getBoundingClientRect(), rs = getComputedStyle(document.documentElement);
+  snapHole(document.getElementById('holeShop'), contentRect(shopHead), sr.left, sr.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
   render();
 }
 
