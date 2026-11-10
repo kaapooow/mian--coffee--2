@@ -319,7 +319,7 @@
     </button>
     <nav class="nav" id="nav" aria-label="Hovedmeny">
       <span class="nav-pill" id="navPill" aria-hidden="true"></span>
-      <a href="#shop">Produkter</a>
+      <a href="#">Produkter</a>
       <a href="#">Om oss</a>
       <a href="#">Samarbeid</a>
       <a href="#">Støtt oss</a>
@@ -705,16 +705,11 @@ matchMedia('(min-width: 1024px)').addEventListener('change', e => { if (e.matche
   });
   nav.addEventListener('pointerleave', hide);
 
-  // selected: mark the link for the section in view (only the shop has a page of its own for now)
-  const spy = [['shop', links[0]]].map(([id, a]) => [document.getElementById(id), a]).filter(([s]) => s);
-  const mark = () => {
-    const y = innerHeight * 0.45;
-    let on = null;
-    spy.forEach(([s, a]) => { const r = s.getBoundingClientRect(); if (r.top <= y && r.bottom > y) on = a; });
-    links.forEach(a => a === on ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'));
-    if (cur) links.forEach(l => l.classList.toggle('is-hover', l === cur && !l.hasAttribute('aria-current')));
-  };
-  addEventListener('scroll', mark, { passive: true }); addEventListener('resize', mark); mark();
+  // selected: the link to the page you are on (the links lead to subpages; '#' = page not built yet)
+  links.forEach(a => {
+    const here = a.getAttribute('href') !== '#' && a.pathname.replace(/\/$/, '') === location.pathname.replace(/\/$/, '');
+    if (here) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+  });
 }
 
 function frame() {
