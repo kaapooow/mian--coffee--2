@@ -69,10 +69,21 @@
   .logo .mark { position: relative; width: 40px; height: 32px; }
   .logo .mark img { position: absolute; inset: 0; width: 40px; height: 32px; display: block; }
   .logo span { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: .9; }
-  .nav { display: flex; gap: 32px; font-weight: 500; font-size: 16px; }
-  .nav a { padding-block: 8px; }
-  .nav a:hover, .nav a:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
-  @media (min-width: 1280px) { .nav { gap: 36px; font-size: 18px; } }
+  /* menu: rounded pills. Hover = a pale pill that slides from link to link (.nav-pill),
+     selected = solid pill in the header colour. Colours follow --hdr, so they turn pink on the brown part. */
+  .nav { position: relative; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 16px; }
+  .nav a { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px;
+           border-radius: 9999px; line-height: 1; transition: color .25s ease, background-color .25s ease; }
+  .nav a.is-hover { color: var(--brown); }
+  .nav a[aria-current] { background: var(--hdr, var(--green-light)); color: var(--brown); }
+  .nav a:focus-visible { outline: 2px solid var(--hdr, var(--green-light)); outline-offset: 3px; }
+  .nav-pill { position: absolute; top: 0; left: 0; height: 44px; border-radius: 9999px; pointer-events: none; opacity: 0;
+              background: color-mix(in srgb, var(--hdr, var(--green-light)) 45%, #fff);
+              transition: transform .35s cubic-bezier(.22, 1, .36, 1), width .35s cubic-bezier(.22, 1, .36, 1), opacity .2s ease; }
+  .nav-pill.on { opacity: 1; }
+  .nav-pill.jump { transition: opacity .2s ease; }
+  @media (min-width: 1280px) { .nav { gap: 6px; font-size: 18px; } .nav a { padding-inline: 20px; } }
+  @media (prefers-reduced-motion: reduce) { .nav-pill, .nav a { transition: none; } }
   .menu-btn { display: none; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; background: none; border: 0;
               color: inherit; font: 600 16px/1 var(--text); cursor: pointer; }
   .menu-btn .bars { position: relative; width: 22px; height: 2px; background: currentColor; transition: background .2s; }
@@ -91,8 +102,14 @@
            padding: 8px var(--gutter) 32px; background: var(--hdr-bg, var(--green)); box-shadow: 0 24px 32px -24px rgb(0 0 0 / .25); }
     .site-header.open { background: var(--hdr-bg, var(--green)); }
     .site-header.open .nav { display: flex; }
-    .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; padding-block: 14px;
-             border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+    .nav { align-items: stretch; gap: 4px; padding-top: 12px; }
+    .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; min-height: 56px;
+             padding: 12px 16px; border-radius: 16px; justify-content: space-between; }
+    .nav a::after { content: "→"; font-family: var(--text); font-size: 20px; opacity: 0; translate: -8px 0;
+                    transition: opacity .25s ease, translate .25s ease; }
+    .nav a:hover, .nav a:focus-visible { background: color-mix(in srgb, var(--hdr, var(--green-light)) 45%, #fff); color: var(--brown); }
+    .nav a:hover::after, .nav a:focus-visible::after, .nav a[aria-current]::after { opacity: 1; translate: 0 0; }
+    .nav-pill { display: none; }
   }
 
   /* buttons */
@@ -284,7 +301,8 @@
       <span class="bars" aria-hidden="true"></span><span id="menuLabel">Meny</span>
     </button>
     <nav class="nav" id="nav" aria-label="Hovedmeny">
-      <a href="#">Produkter</a>
+      <span class="nav-pill" id="navPill" aria-hidden="true"></span>
+      <a href="#shop">Produkter</a>
       <a href="#">Om oss</a>
       <a href="#">Samarbeid</a>
       <a href="#">Støtt oss</a>
@@ -645,6 +663,42 @@ menuBtn.addEventListener('click', () => setMenu(!header.classList.contains('open
 document.getElementById('nav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
 addEventListener('keydown', e => { if (e.key === 'Escape' && header.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
 matchMedia('(min-width: 1024px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
+
+// menu hover: one pale pill that slides to the link under the pointer (or with keyboard focus)
+{
+  const nav = document.getElementById('nav'), pill = document.getElementById('navPill');
+  const links = [...nav.querySelectorAll('a')];
+  let cur = null;
+  const show = a => {
+    if (a === cur) return;
+    const first = !pill.classList.contains('on');
+    pill.classList.toggle('jump', first);              // first hover: appear in place, no slide in from the left
+    pill.style.width = a.offsetWidth + 'px';
+    pill.style.transform = `translate(${a.offsetLeft}px, ${a.offsetTop + (a.offsetHeight - 44) / 2}px)`;
+    if (first) pill.offsetWidth;                       // commit the position before fading in
+    pill.classList.add('on'); pill.classList.remove('jump');
+    links.forEach(l => l.classList.toggle('is-hover', l === a && !l.hasAttribute('aria-current')));
+    cur = a;
+  };
+  const hide = () => { pill.classList.remove('on'); links.forEach(l => l.classList.remove('is-hover')); cur = null; };
+  links.forEach(a => {
+    a.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') show(a); });
+    a.addEventListener('focus', () => { if (a.matches(':focus-visible')) show(a); });
+    a.addEventListener('blur', hide);
+  });
+  nav.addEventListener('pointerleave', hide);
+
+  // selected: mark the link for the section in view (only the shop has a page of its own for now)
+  const spy = [['shop', links[0]]].map(([id, a]) => [document.getElementById(id), a]).filter(([s]) => s);
+  const mark = () => {
+    const y = innerHeight * 0.45;
+    let on = null;
+    spy.forEach(([s, a]) => { const r = s.getBoundingClientRect(); if (r.top <= y && r.bottom > y) on = a; });
+    links.forEach(a => a === on ? a.setAttribute('aria-current', 'true') : a.removeAttribute('aria-current'));
+    if (cur) links.forEach(l => l.classList.toggle('is-hover', l === cur && !l.hasAttribute('aria-current')));
+  };
+  addEventListener('scroll', mark, { passive: true }); addEventListener('resize', mark); mark();
+}
 
 function frame() {
   requestAnimationFrame(frame);
