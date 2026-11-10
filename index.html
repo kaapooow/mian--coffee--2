@@ -416,14 +416,16 @@ const BAG_DIR = small ? 'frames/pose2-720' : 'frames/pose2';
 const BEAN_DIR = 'frames/bonne-800';
 const pad = i => String(i).padStart(3, '0');
 const loader = document.getElementById('loader');
-let loaded = 0, total = 2 * N + 1, dirty = true;
+let loaded = 0, total = 2 * N + 2, dirty = true;
 const onload = () => { loaded++; loader.textContent = loaded < total ? `Laster ${loaded}/${total}` : ''; dirty = true; };
 const seq = (dir, name) => Array.from({ length: N }, (_, k) => {
   const im = new Image(); im.decoding = 'async'; im.onload = onload; im.src = `${dir}/${name}_${pad(k + 1)}.webp`; return im;
 });
 const bagImgs = seq(BAG_DIR, 'pose');
 const beanImgs = seq(BEAN_DIR, 'bonne');
-const neutral = new Image(); neutral.onload = onload; neutral.src = 'assets/pose-noytral.webp';
+// the two bags behind the front one carry the Omstart (yellow, middle) and Drømmestart (green, back) stickers
+const bagMid = new Image(); bagMid.onload = onload; bagMid.src = 'assets/pose-omstart.webp';
+const bagBack = new Image(); bagBack.onload = onload; bagBack.src = 'assets/pose-drommestart.webp';
 
 // -------------------------------------------------------------- helpers
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
@@ -673,7 +675,7 @@ function frame() {
   // the two neutral bags behind slide out to the right
   place(back2, tr(p, [[K[0], 1128], [K[1], 1283], [K[2], 2250]]), 529, NEUTRAL2);
   place(back3, tr(p, [[K[0], 1275], [K[1], 1609], [K[2], 2250]]), 529, NEUTRAL3);
-  paint(back2, neutral, 'n'); paint(back3, neutral, 'n');
+  paint(back2, bagMid, 'omstart'); paint(back3, bagBack, 'drommestart');
 
   // the front bag: tips over, pours, ends upside down at the top
   const bx = tr(p, [[K[0], 958.5], [K[1], 906], [K[2], 823], [K[3], 751]]);
