@@ -117,7 +117,7 @@
   .intro .btn--dark { background: #000; }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
   .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--pink-light); }
-  .outro h2 span { display: block; white-space: nowrap; }
+  .outro h2 > span { display: block; white-space: nowrap; }   /* the two lines, not the letters inside them */
   .baseline { display: inline-block; width: 0; height: 0; vertical-align: baseline; }   /* marks where the last word sits */
   .outro { opacity: 0; visibility: hidden; }
 
@@ -254,8 +254,10 @@
   @keyframes float { from { translate: 0 calc(var(--fy, 8px) * -1); } to { translate: 0 var(--fy, 10px); } }
 
   /* build-in the first time the section scrolls into view */
-  .shop:not(.is-built) .shop-head h2 { opacity: 0; translate: 0 32px; }
-  .shop-head h2 { transition: opacity .8s ease, translate .9s cubic-bezier(.2, .8, .2, 1); }
+  /* titles fly in letter by letter (see revealTitle) */
+  .tw { display: inline-block; white-space: nowrap; }
+  .ch { display: inline-block; }
+  .reveal-wait .ch { opacity: 0; }
   .shop:not(.is-built) .slide-inner { opacity: 0; transform: translate(var(--from-x, 0), 90px) rotate(var(--from-r, 0deg)) scale(.9); }
   .shop:not(.is-built) .c-controls { opacity: 0; }
   .c-controls { transition: opacity .7s ease .9s; }
@@ -356,6 +358,57 @@
 <div class="loader" id="loader">Laster …</div>
 
 <script>
+// ------------------------------------------------------------------ title reveal
+// Titles come in letter by letter: each letter slides 20 px in from the left while it goes from
+// invisible and 10 px blurred to sharp, about 0.7 s each, 28 ms after the one before.
+// Words stay unbroken; screen readers get the plain title through aria-label.
+const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function splitTitle(el) {
+  if (el.dataset.split) return;
+  el.dataset.split = '1';
+  el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
+  const walk = node => {
+    for (const n of [...node.childNodes]) {
+      if (n.nodeType === 1) { if (n.tagName !== 'BR' && !n.classList.contains('baseline')) walk(n); continue; }
+      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
+      const frag = document.createDocumentFragment();
+      n.textContent.split(/(\s+)/).forEach(part => {
+        if (!part) return;
+        if (/^\s+$/.test(part)) { frag.append(document.createTextNode(' ')); return; }
+        const w = document.createElement('span'); w.className = 'tw'; w.setAttribute('aria-hidden', 'true');
+        for (const c of part) { const sp = document.createElement('span'); sp.className = 'ch'; sp.textContent = c; w.append(sp); }
+        frag.append(w);
+      });
+      n.replaceWith(frag);
+    }
+  };
+  walk(el);
+}
+function revealTitle(el, delay = 0) {
+  splitTitle(el);
+  el.classList.remove('reveal-wait');
+  if (REDUCE_MOTION) return;
+  el._anims = [...el.querySelectorAll('.ch')].map((c, i) => c.animate(
+    [{ opacity: 0, filter: 'blur(10px)', transform: 'translateX(-20px)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }],
+    { duration: 700, delay: delay + i * 28, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' }));
+}
+function hideTitle(el) {                      // ready to play again
+  splitTitle(el);
+  (el._anims || []).forEach(a => a.cancel()); el._anims = null;
+  el.classList.add('reveal-wait');
+}
+// width of the widest line of a heading (its letters are separate boxes, so group them per line)
+function widestLine(el) {
+  const rg = document.createRange(); rg.selectNodeContents(el);
+  const lines = {};
+  for (const r of rg.getClientRects()) {
+    if (!r.width) continue;
+    const k = Math.round(r.top / 4);
+    const l = lines[k] || (lines[k] = [Infinity, -Infinity]);
+    l[0] = Math.min(l[0], r.left); l[1] = Math.max(l[1], r.right);
+  }
+  return Math.max(...Object.values(lines).map(([a, b]) => b - a));
+}
 // ------------------------------------------------------------------ assets
 const N = 150;
 const small = matchMedia('(max-width: 768px)').matches;
@@ -525,8 +578,8 @@ function placeIntro() {
   const h1 = intro.querySelector('h1');
   h1.style.fontSize = '';
   const fs = parseFloat(getComputedStyle(h1).fontSize);
-  const rg = document.createRange(); rg.selectNodeContents(h1);
-  const widest = Math.max(...[...rg.getClientRects()].map(r => r.width));
+  splitTitle(h1);
+  const widest = widestLine(h1);
   if (widest > inner) h1.style.fontSize = Math.floor(fs * inner / widest) + 'px';
   // rows: copy height plus padding; start row under the header
   const t0 = intro.style.translate; intro.style.translate = '0 0';
@@ -669,6 +722,8 @@ function frame() {
   const oi = clamp((p - K[4] - 0.08) / (K[5] - K[4] - 0.08));
   outro.style.opacity = E.out(oi);
   holeOutro.style.opacity = E.out(oi);
+  if (oi > 0.02 && !outroH._anims) revealTitle(outroH);
+  else if (oi === 0 && outroH._anims) hideTitle(outroH);
   outroH.style.transform = `translateY(${(1 - E.out(oi)) * 40}px)`;
   outroA.style.transform = `translateY(${(1 - E.out(oi)) * 24}px)`;
   outro.style.visibility = oi > 0 ? 'visible' : 'hidden';
@@ -676,6 +731,10 @@ function frame() {
 addEventListener('scroll', () => { dirty = true; }, { passive: true });
 addEventListener('resize', layout);
 document.fonts && document.fonts.ready.then(layout);   // text heights change once the web fonts arrive
+// hero title flies in when the page opens; the last-frame title waits for its moment
+hideTitle(outroH);
+hideTitle(intro.querySelector('h1'));
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => setTimeout(() => revealTitle(intro.querySelector('h1')), 150));
 layout();
 requestAnimationFrame(frame);
 </script>
@@ -990,7 +1049,8 @@ addEventListener('scroll', parallax, { passive: true });
 
 // ------------------------------------------------------------- build-in on first view
 let built = false;
-const build = () => { built = true; shop.classList.add('is-built'); rainScene(900); };
+const build = () => { built = true; shop.classList.add('is-built'); revealTitle(document.getElementById('shopTitle')); rainScene(900); };
+hideTitle(document.getElementById('shopTitle'));
 if (reduce || !('IntersectionObserver' in window)) build();
 else new IntersectionObserver((entries, io) => {
   if (entries.some(e => e.isIntersecting)) { build(); io.disconnect(); }
