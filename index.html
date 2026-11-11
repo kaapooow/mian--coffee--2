@@ -54,7 +54,12 @@
   /* no grid behind headline, lead and buttons: whole cells are cleared around them */
   .hole { position: absolute; left: 0; top: 0; width: 0; height: 0; background: var(--bg); pointer-events: none; }
 
-  .container { width: 100%; max-width: calc(var(--max) + 2 * var(--gutter)); margin-inline: auto; padding-inline: var(--gutter); }
+  /* Page grid: the content always starts in column 2 and stops before the last column (one untouched column
+     each side, more on very wide screens so the content keeps its max width). JS sets --c0 (left edge of
+     column 2) and --cw (width of the content columns); the fallbacks are only for the first paint. */
+  :root { --pad: 24px; }          /* padding inside the boxes behind titles and leads */
+  .container { width: var(--cw, calc(100% - 2 * var(--gutter))); margin-left: var(--c0, var(--gutter)); margin-right: 0;
+               padding-inline: 0; max-width: none; }
 
   /* header: fixed to the top of the window, outside the animated stage */
   .skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
@@ -71,7 +76,7 @@
   .site-header.is-yellow .nav-pill { background: rgb(255 255 255 / .65); }
   .site-header.is-yellow .nav a[aria-current] { color: var(--yellow); }
   @media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: rgb(255 255 255 / .65); } }
-  .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .header-inner { height: var(--header-h); padding-inline: var(--pad); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
   .logo .mark img { position: absolute; inset: 0; width: 40px; height: 32px; display: block; }
@@ -106,7 +111,7 @@
   @media (max-width: 1023px) {
     .menu-btn { display: inline-flex; }
     .nav { display: none; position: fixed; inset: var(--header-h) 0 auto; flex-direction: column; gap: 0;
-           padding: 8px var(--gutter) 32px; background: var(--hdr-bg, var(--green)); box-shadow: 0 24px 32px -24px rgb(0 0 0 / .25); }
+           padding: 8px var(--c0, var(--gutter)) 32px; background: var(--hdr-bg, var(--green)); box-shadow: 0 24px 32px -24px rgb(0 0 0 / .25); }
     .site-header.open { background: var(--hdr-bg, var(--green)); }
     .site-header.open .nav { display: flex; }
     .nav { align-items: stretch; gap: 4px; padding-top: 12px; }
@@ -132,7 +137,7 @@
      Mobile first: text at the top under the header, the 3D scene below it. */
   .copy { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
   .copy > .container { position: relative; height: 100%; }
-  .intro, .outro { position: absolute; left: var(--gutter); right: var(--gutter); top: calc(var(--header-h) + 16px);
+  .intro, .outro { position: absolute; left: var(--pad); right: var(--pad); top: calc(var(--header-h) + 16px);
                    display: flex; flex-direction: column; align-items: flex-start; }
   .intro a, .outro a { pointer-events: auto; }
   .intro h1, .outro h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; line-height: 1; text-wrap: balance; }
@@ -172,15 +177,16 @@
           background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                       linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--brown));
           min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
-          padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(12px, 2.5vh, 32px);
+          padding-top: var(--header-h); padding-bottom: 0;
           overflow: clip; isolation: isolate; }
   /* desktop: tuck the shop 60px up under the empty bottom of the last hero frame, ~200px between them */
   @media (min-width: 1024px) { .shop { margin-top: -60px; } }
-  .shop-head { position: relative; z-index: 12; }
+  /* title boxes: whole rows high, text 24 px in from the box's left edge and centred in its height */
+  .shop-head, .abo-head { position: relative; z-index: 12; display: flex; flex-direction: column; justify-content: center;
+                          padding-inline: var(--pad); }
   .shop-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
 
-  .carousel { position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center;
-              margin-top: clamp(8px, 2vh, 28px); outline: none; touch-action: pan-y; }
+  .carousel { position: relative; display: flex; flex-direction: column; outline: none; touch-action: pan-y; }
   .carousel:focus-visible { outline: 2px solid var(--pink); outline-offset: -4px; }
   .c-stage { position: relative; height: var(--stage-h, 600px); }
 
@@ -196,13 +202,13 @@
      the number of rows follows the screen height, and every part of the card sits on whole cells:
      tag in the top rows, then the image, the title box, the price box and the button.
      JS sets --cols, --rows, --sx (cell size) and the grid areas (--g-*). */
-  .card { position: relative; display: grid; width: var(--card-w); height: calc(var(--rows, 14) * var(--sx, 50.4px));
+  .card { position: relative; display: grid; width: var(--card-w); height: calc(var(--rows, 14) * var(--sy, var(--sx, 50.4px)));
           grid-template-columns: repeat(var(--cols, 10), 1fr); grid-template-rows: repeat(var(--rows, 14), 1fr);
           border-radius: 16px; color: var(--brown); box-shadow: inset 0 0 0 6px var(--brown);
           --grid-line: rgb(44 15 7 / .09);
           background:
-            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sx, 50.4px),
-            linear-gradient(180deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sx, 50.4px),
+            linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sy, 50.4px),
+            linear-gradient(180deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sy, 50.4px),
             linear-gradient(180deg, rgb(44 15 7 / .06), rgb(44 15 7 / 0)), #fff; }
   /* cards on the sides sit back: darker at the top and faded, as in the sketch */
   .card::after { content: ""; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; opacity: 0; z-index: 2;
@@ -244,7 +250,7 @@
   .card-btn.is-added { background: #2f6b2a; }
 
   /* pagination: prev, one dot per product, next */
-  .c-controls { position: relative; z-index: 12; display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: var(--ctrl-gap, 24px); }
+  .c-controls { position: relative; z-index: 12; display: flex; align-items: center; justify-content: center; gap: 12px; height: var(--gy); }
   .c-arrow { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
              background: var(--brown); color: var(--pink-light); border: 1.5px solid rgb(252 205 255 / .4); transition: background .2s, color .2s; }
   .c-arrow:hover, .c-arrow:focus-visible { background: var(--pink-light); color: var(--brown); outline: none; }
@@ -283,14 +289,12 @@
   .abo { position: relative; z-index: 1; color: var(--brown); --grid: #F2C930; --bg: var(--yellow);
          background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--yellow));
-         padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(32px, 6vh, 64px);
+         padding-top: var(--header-h); padding-bottom: var(--gy);
          overflow: clip; isolation: isolate; }
-  @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: clamp(12px, 2.5vh, 32px); } }
-  .abo-head { position: relative; z-index: 2; }
+  @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: 0; } }
   .abo-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
   .abo-head p { margin-top: 16px; max-width: 60em; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; text-wrap: pretty; }
-  .abo-cards { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--abo-gap, 16px);
-               margin-top: clamp(16px, 3vh, 40px); }
+  .abo-cards { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: var(--abo-justify, flex-start); gap: var(--abo-gap, 16px); }
   .abo-cards { column-gap: var(--abo-gap, 16px); row-gap: var(--abo-row-gap, 16px); padding-bottom: var(--abo-over, 0px); }
   .abo .card { box-shadow: none; }                                      /* no frame on these cards */
   .abo .card-top { justify-content: center; }
@@ -621,24 +625,48 @@ function layout() {
   layoutGrid();
   dirty = true;
 }
-// Grid cells: about 112 px on a 1528 px wide screen (56–120 px), a whole number of cells across both
-// the width and the height of the viewport, so they end up as square as possible.
+// Page grid. Cells are about 88 px on desktop, smaller on narrow screens (a 16th of the width, 48–88 px),
+// with a whole number of cells across both the width and the height of the viewport, so they end up as
+// square as possible. Content goes from column 2 to the column before the last; on very wide screens
+// more columns stay empty on both sides so the content is never wider than about 1280 px.
+// The header is the first row.
 const root = document.documentElement;
+let PG = {};
 const holeIntro = document.getElementById('holeIntro'), holeOutro = document.getElementById('holeOutro');
 function gridCells() {
   const W = innerWidth, H = innerHeight;
-  const cols = Math.max(4, Math.round(W / Math.max(56, Math.min(120, W / 13.6))));
-  const gx = W / cols, rows = Math.max(4, Math.round(H / gx));
-  return { gx, gy: H / rows };
+  const cols = Math.max(6, Math.round(W / Math.max(48, Math.min(88, W / 16))));
+  const gx = W / cols, rows = Math.max(4, Math.round(H / gx)), gy = H / rows;
+  const m = Math.max(1, Math.ceil((cols - Math.floor(1280 / gx)) / 2));   // empty columns on each side
+  const C = cols - 2 * m;
+  PG = { gx, gy, cols, rows, m, C, c0: m * gx, cw: C * gx };
+  const px = v => v + 'px';
+  root.style.setProperty('--gx', px(gx)); root.style.setProperty('--gy', px(gy));
+  root.style.setProperty('--c0', px(PG.c0)); root.style.setProperty('--cw', px(PG.cw));
+  root.style.setProperty('--header-h', px(gy));
+  return PG;
 }
-// clear whole cells around an element's content; box = its rect relative to the grid's origin
-// Never covers column 1: the box starts in column 2 at the earliest, keeping its number of columns.
+gridCells();
+// A title box: whole rows high (title and lead plus 24 px padding), starting at the row under the header,
+// from column 2 as many columns wide as the text needs. The text sits 24 px in and is centred in the height.
+function headBox(sec, head, hole) {
+  const g = PG;
+  head.style.height = '';
+  const r = contentRect(head);
+  const rows = Math.max(1, Math.ceil((r.bottom - r.top + 2 * PAD) / g.gy));
+  head.style.height = rows * g.gy + 'px';
+  const s = sec.getBoundingClientRect(), h = head.getBoundingClientRect(), rr = contentRect(head);
+  const c1 = Math.min(g.m + g.C, Math.max(g.m + 1, Math.ceil((rr.right + PAD - s.left) / g.gx - .02)));
+  const top = Math.round((h.top - s.top) / g.gy) * g.gy;
+  Object.assign(hole.style, { left: g.c0 + 1 + 'px', top: top + 1 + 'px', width: (c1 - g.m) * g.gx - 1 + 'px', height: rows * g.gy - 1 + 'px' });
+  return rows;
+}
+// clear whole cells around an element's content plus 24 px all round; r = its rect, ox/oy = the grid's origin.
+// Stays inside the content columns: from column 2, never into the last column.
 function snapHole(hole, r, ox, oy, gx, gy) {
-  const c0 = Math.floor((r.left - ox) / gx), c1 = Math.ceil((r.right - ox) / gx);
-  const start = Math.max(1, c0), cols = c1 - c0;               // column index 1 = column 2
-  const last = Math.round(hole.parentElement.clientWidth / gx); // never past the last column
-  const l = start * gx, rr = Math.min(start + cols, last) * gx;
-  const t = Math.floor((r.top - oy) / gy) * gy, b = Math.ceil((r.bottom - oy) / gy) * gy;
+  const l = Math.max(PG.m, Math.floor((r.left - PAD - ox) / gx + .02)) * gx;
+  const rr = Math.min(PG.m + PG.C, Math.ceil((r.right + PAD - ox) / gx - .02)) * gx;
+  const t = Math.floor((r.top - PAD - oy) / gy + .02) * gy, b = Math.ceil((r.bottom + PAD - oy) / gy - .02) * gy;
   Object.assign(hole.style, { left: l + 1 + 'px', top: t + 1 + 'px', width: rr - l - 1 + 'px', height: b - t - 1 + 'px' });
 }
 // the area the copy really covers: the text itself and the buttons, not the full width of their blocks
@@ -656,12 +684,12 @@ function contentRect(el) {
 // the header on narrow ones. The headline shrinks if it would not fit the 5 columns.
 const PAD = 24;
 function placeIntro() {
-  const { gx, gy } = gridCells();
-  root.style.setProperty('--gx', gx + 'px'); root.style.setProperty('--gy', gy + 'px');
+  const { gx, gy, c0, C } = gridCells();
   const vp = document.querySelector('.viewport').getBoundingClientRect();
   const cont = intro.parentElement.getBoundingClientRect();
-  const cols = Math.min(5, Math.round(innerWidth / gx) - 1), boxW = cols * gx, inner = boxW - 2 * PAD;
-  Object.assign(intro.style, { left: gx + PAD - (cont.left - vp.left) + 'px', right: 'auto', width: inner + 'px', transform: 'none' });
+  // about 480 px wide (5 columns on desktop), never wider than the content columns
+  const cols = Math.min(C, Math.max(2, Math.round(480 / gx))), boxW = cols * gx, inner = boxW - 2 * PAD;
+  Object.assign(intro.style, { left: c0 + PAD - (cont.left - vp.left) + 'px', right: 'auto', width: inner + 'px', transform: 'none' });
   // headline: the CSS size, or smaller if its longest line would not fit
   const h1 = intro.querySelector('h1');
   h1.style.fontSize = '';
@@ -678,11 +706,10 @@ function placeIntro() {
   // whole rows leave some extra height: split it evenly above and below, so the padding is at least 24 px all round
   intro.style.top = row * gy + (rows * gy - intro.offsetHeight) / 2 - (cont.top - vp.top) + 'px';
   intro.style.translate = t0;
-  Object.assign(holeIntro.style, { left: gx + 1 + 'px', top: row * gy + 1 + 'px', width: boxW - 1 + 'px', height: rows * gy - 1 + 'px' });
+  Object.assign(holeIntro.style, { left: c0 + 1 + 'px', top: row * gy + 1 + 'px', width: boxW - 1 + 'px', height: rows * gy - 1 + 'px' });
 }
 function layoutGrid() {
-  const { gx, gy } = gridCells();
-  root.style.setProperty('--gx', gx + 'px'); root.style.setProperty('--gy', gy + 'px');
+  const { gx, gy } = PG;
   const vp = document.querySelector('.viewport').getBoundingClientRect();
   // measure the copy where it rests (without the scroll-driven drift and fade-in offsets)
   const t1 = intro.style.translate, t2 = outroH.style.transform, t3 = outroA.style.transform;
@@ -960,84 +987,63 @@ const dots = PRODUCTS.map((p, i) => {
 // Title, text and price get as many rows as their content needs; the image gets the rows that are left
 // on screen (max 7, as in the sketch), so the section still fits the viewport and the cells stay square.
 let G = {};
+// Card on the page grid: a whole number of page columns wide, with its edges on column lines (the card
+// is centred, so its column count has the same parity as the page's). Its inner cells are half a page
+// cell, so the card's lines continue the page's. Rows from the top of the section: the header row,
+// the title box, the card, one row for the controls.
 function measure() {
-  const W = carousel.clientWidth, H = innerHeight;
+  const g = PG, W = innerWidth;
   const lands = matchMedia('(max-height: 520px) and (min-aspect-ratio: 11/10)').matches;
-  const maxW = lands ? Math.min(W * .62, 560) : W < 640 ? Math.min(W * .8, 360) : W < 1024 ? Math.min(W * .52, 440) : Math.min(504, W * .35);
-  const cols = lands ? Math.max(12, Math.round(maxW / 32)) : Math.max(8, Math.round(maxW / 50.4));
   const st = carousel.style, px = v => v + 'px';
   const area = (r1, c1, r2, c2) => `${r1} / ${c1} / ${r2} / ${c2}`;
-  const half = Math.floor(cols / 2);
-  const tilt = lands ? 8 : 20;                               // room for the tilted side cards
-  st.setProperty('--cols', cols);
-  st.setProperty('--ctrl-gap', px(lands ? 4 : H < 700 ? 12 : 24));
-  const cs = getComputedStyle(shop), cc = getComputedStyle(carousel), ct = getComputedStyle(cControls);
-  const avail = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - shopHead.offsetHeight
-              - parseFloat(cc.marginTop) - cControls.offsetHeight - parseFloat(ct.marginTop) - tilt;
-
-  // set a cell size and count the rows each part needs at that size
-  let sx = maxW / cols, rows;
-  const apply = sx => {
-    const c = Math.min(1, sx / 50.4);
-    st.setProperty('--sx', px(sx));
-    st.setProperty('--card-w', px(sx * cols));
-    st.setProperty('--title-fs', px(lands ? 21 : Math.max(22, 40 * c)));
-    st.setProperty('--desc-fs', px(c < .8 ? 15 : 16));
-    st.setProperty('--tag-fs', px(c < .8 ? 11.5 : 12));
-    st.setProperty('--btn-fs', px(c < .8 || lands ? 16 : 18));
-    st.setProperty('--box-pad', px(lands ? 3 : Math.max(4, 6 * c)));
-    st.setProperty('--rows', 30);
-    st.setProperty('--g-text', lands ? area(2, half + 1, 'span 2', -2) : area(10, 2, 'span 2', -2));
-    st.setProperty('--g-price', lands ? area(4, half + 1, 'span 1', -2) : area(12, 2, 'span 1', -2));
-    const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sx));
-    let T = 1, P = 1;
-    for (const el of slides) {
-      const t = el.querySelector('.card-text'), pad = parseFloat(getComputedStyle(t).paddingTop);
-      const kids = [...t.children].filter(k => k.offsetParent);
-      const need = kids.reduce((h, k) => h + k.offsetHeight, 0) + 4 * (kids.length - 1) + 2 * pad;
-      T = Math.max(T, rowsFor(need));
-      P = Math.max(P, rowsFor(el.querySelector('.card-price').firstElementChild.offsetHeight + (lands ? 4 : 12)));
-    }
-    if (!lands) T = Math.max(T, 2);
-    // button area: the 48 px button plus room above and, as asked, more room below it
-    return { T, P, top: lands ? 1 : Math.max(2, rowsFor(26 + 24 * c)), B: rowsFor(lands ? 44 : 96) };
-  };
-  // shrink the cells if the screen is too low for the card with at least 6 image rows (4 on phones),
-  // so the cells stay square and the image keeps a decent size instead of the card overflowing
-  const minImg = lands ? 0 : H < 700 ? 4 : 6;
-  for (let k = 0; k < 3; k++) {
-    rows = apply(sx);
-    const need = rows.top + rows.T + rows.P + rows.B + minImg;
-    if (need * sx <= avail + .5) break;
-    sx = Math.max(24, avail / need);
+  const headRows = headBox(shop, shopHead, document.getElementById('holeShop'));
+  const cardPR = Math.max(lands ? 3 : 4, g.rows - 1 - headRows - 1);    // card height in page rows
+  const sx = g.gx / 2, sy = g.gy / 2, R = cardPR * 2, cardH = R * sy;
+  let kc = Math.floor(Math.min(g.cw, lands ? 560 : Math.min(cardH, 540)) / g.gx + .02);   // about 540 px, never wider than tall
+  if ((g.cols - kc) % 2) kc -= 1;
+  kc = Math.max(2, kc);
+  const cols = kc * 2, cardW = kc * g.gx, half = Math.floor(cols / 2);
+  const c = Math.min(1, sx / 50.4);
+  st.setProperty('--cols', cols); st.setProperty('--rows', R);
+  st.setProperty('--sx', px(sx)); st.setProperty('--sy', px(sy)); st.setProperty('--card-w', px(cardW));
+  st.setProperty('--title-fs', px(lands ? 21 : Math.max(22, 40 * c)));
+  st.setProperty('--desc-fs', px(c < .8 ? 15 : 16));
+  st.setProperty('--tag-fs', px(c < .8 ? 11.5 : 12));
+  st.setProperty('--btn-fs', px(c < .8 || lands ? 16 : 18));
+  st.setProperty('--box-pad', px(lands ? 3 : Math.max(4, 6 * c)));
+  st.setProperty('--g-text', lands ? area(2, half + 1, 'span 2', -2) : area(10, 2, 'span 2', -2));
+  st.setProperty('--g-price', lands ? area(4, half + 1, 'span 1', -2) : area(12, 2, 'span 1', -2));
+  // rows each part needs, in card rows
+  const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sy));
+  let T = 1, P = 1;
+  for (const el of slides) {
+    const t = el.querySelector('.card-text'), pad = parseFloat(getComputedStyle(t).paddingTop);
+    const kids = [...t.children].filter(k => k.offsetParent);
+    const need = kids.reduce((h, k) => h + k.offsetHeight, 0) + 4 * (kids.length - 1) + 2 * pad;
+    T = Math.max(T, rowsFor(need));
+    P = Math.max(P, rowsFor(el.querySelector('.card-price').firstElementChild.offsetHeight + (lands ? 4 : 12)));
   }
-  const { T, P, top: topR, B } = rows;
-  const rowsFit = Math.max(1, Math.floor((avail + .5) / sx));
-  let R;
+  if (!lands) T = Math.max(T, 2);
+  const topR = lands ? 1 : Math.max(2, rowsFor(26 + 24 * c));
+  let B = rowsFor(lands ? 44 : 96);
   if (lands) {
-    R = Math.max(topR + T + P + B, Math.min(rowsFit, 8));
     st.setProperty('--g-top', area(1, 2, topR + 1, -2));
     st.setProperty('--g-img', area(topR + 1, 2, R + 1, half + 1));
     st.setProperty('--g-text', area(topR + 1, half + 1, `span ${T}`, -2));
     st.setProperty('--g-price', area(topR + T + 1, half + 1, `span ${P}`, -2));
-    st.setProperty('--g-btn', area(topR + T + P + 1, half + 1, `span ${B}`, -2));
+    st.setProperty('--g-btn', area(topR + T + P + 1, half + 1, `span ${Math.max(1, R - topR - T - P)}`, -2));
   } else {
-    const imgR = Math.max(2, Math.min(7, rowsFit - topR - T - P - B));
-    R = topR + imgR + T + P + B;
+    if (R - topR - T - P - B < 2) B = Math.max(rowsFor(56), R - topR - T - P - 2);
+    const imgR = Math.max(1, R - topR - T - P - B);
     st.setProperty('--g-top', area(1, 2, topR + 1, -2));
     st.setProperty('--g-img', area(topR + 1, 2, topR + imgR + 1, -2));
     st.setProperty('--g-text', area(topR + imgR + 1, 2, `span ${T}`, -2));
     st.setProperty('--g-price', area(topR + imgR + T + 1, 2, `span ${P}`, -2));
     st.setProperty('--g-btn', area(R - B + 1, 1, -1, -1));
   }
-  st.setProperty('--rows', R);
-  const cardW = sx * cols, cardH = R * sx;
-  st.setProperty('--stage-h', px(cardH + tilt));
+  st.setProperty('--stage-h', px(cardH));
   const peek = W < 640 ? 26 : W < 1024 ? 70 : 140;          // how much of the side cards shows
   G = { W, cardW, gap: Math.min(cardW * 1.19, W / 2 + cardW / 2 - peek), cardH };
-  // no grid behind the section title (the shop grid starts at the section's top left)
-  const sr = shop.getBoundingClientRect(), rs = getComputedStyle(document.documentElement);
-  snapHole(document.getElementById('holeShop'), contentRect(shopHead), sr.left, sr.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
   render();
 }
 
@@ -1243,22 +1249,26 @@ const aboEls = PLANS.map((p, i) => {
   return el;
 });
 
-// card size: three in a row from 1024 px (the section fits the screen), stacked and up to 440 px wide below.
-// Square cells as in the shop; tag, title, price and button get whole rows, the bags get the rest.
+// Cards on the page grid: whole page columns wide with a whole column between them, starting in column 2.
+// Three in a row when each card gets at least 3 columns (from 1024 px), otherwise stacked and centred.
+// Inner cells are half a page cell, as in the shop. Tag, title, price and button get whole rows, the bags the rest.
 function measureAbo() {
-  const W = aboCards.clientWidth, H = innerHeight, wide = innerWidth >= 1024;
-  const gap = 16, st = aboCards.style, px = v => v + 'px';
+  const g = PG, st = aboCards.style, px = v => v + 'px';
   const area = (r1, c1, r2, c2) => `${r1} / ${c1} / ${r2} / ${c2}`;
-  const cardW = wide ? (W - 2 * gap) / 3 : Math.min(W, 440);
-  const cols = Math.max(8, Math.round(cardW / 50.4)), sx = cardW / cols, c = Math.min(1, sx / 50.4);
-  st.setProperty('--abo-gap', px(gap));
-  st.setProperty('--cols', cols); st.setProperty('--sx', px(sx)); st.setProperty('--card-w', px(cardW));
+  const headRows = headBox(abo, aboHead, document.getElementById('holeAbo'));
+  let kc = Math.floor((g.C - 2) / 3);
+  const wide = innerWidth >= 1024 && kc >= 3;
+  if (!wide) { kc = Math.min(g.C, Math.max(2, Math.round(440 / g.gx))); if ((g.C - kc) % 2) kc -= 1; }
+  const cardW = kc * g.gx, cols = kc * 2, sx = g.gx / 2, sy = g.gy / 2, c = Math.min(1, sx / 50.4);
+  st.setProperty('--abo-gap', px(g.gx));
+  st.setProperty('--abo-justify', wide ? 'flex-start' : 'center');
+  st.setProperty('--cols', cols); st.setProperty('--sx', px(sx)); st.setProperty('--sy', px(sy)); st.setProperty('--card-w', px(cardW));
   st.setProperty('--title-fs', px(Math.max(22, 40 * c)));
   st.setProperty('--desc-fs', px(c < .8 ? 15 : 16));
   st.setProperty('--tag-fs', px(c < .8 ? 11.5 : 12));
   st.setProperty('--btn-fs', px(c < .8 ? 16 : 18));
   st.setProperty('--box-pad', px(Math.max(4, 6 * c)));
-  const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sx));
+  const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sy));
   const top = Math.max(2, rowsFor(26 + 24 * c));
   st.setProperty('--rows', 30);
   st.setProperty('--g-text', area(top + 1, 2, 'span 2', -2));
@@ -1269,30 +1279,23 @@ function measureAbo() {
     P = Math.max(P, rowsFor(el.querySelector('.card-price').firstElementChild.offsetHeight + 12));
   }
   T = Math.max(T, 2);
-  const B = rowsFor(96);
-  // bags: full size if they fit. On desktop the whole stack (inside and below the card) has to fit the screen,
-  // so it shrinks on low screens; the card gets the rows for the part of the stack that is inside it.
+  const B = rowsFor(96), fixed = top + T + P + B;
+  // bags: full size if they fit. In a row, the whole stack (inside and below the card) has to fit the screen,
+  // so it shrinks on low screens (to 85 % at most, then the section grows a little instead)
   const stackH = Math.max(...PLANS.map(p => p.h)) * cardW;
   let s = 1;
-  if (wide) {
-    const cs = getComputedStyle(abo);
-    const avail = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - aboHead.offsetHeight - parseFloat(getComputedStyle(aboCards).marginTop);
-    s = Math.max(.85, Math.min(1, (avail - (top + T + P + B) * sx) / stackH));   // never below 85 %: rather a slightly taller section
-  }
-  const imgR = Math.max(3, Math.round(stackH * s * (1 - OVER) / sx));   // the stack may reach a little into the button rows, they have room
+  if (wide) s = Math.max(.85, Math.min(1, ((g.rows - 1 - headRows) * g.gy - fixed * sy) / stackH));
+  let R = fixed + Math.max(3, Math.round(stackH * s * (1 - OVER) / sy));
+  R += R % 2;                                           // card ends on a page row line
   const over = stackH * s * OVER;
   st.setProperty('--bag-s', s.toFixed(3));
   st.setProperty('--abo-over', px(over));
-  st.setProperty('--abo-row-gap', px(over + 32));       // stacked cards: room for the bags hanging out above the next card
-  const R = top + T + P + B + imgR;
+  st.setProperty('--abo-row-gap', px(Math.ceil((over + 24) / g.gy) * g.gy));   // stacked: whole rows, room for the bags
   st.setProperty('--rows', R);
   st.setProperty('--g-top', area(1, 2, top + 1, -2));
   st.setProperty('--g-text', area(top + 1, 2, `span ${T}`, -2));
   st.setProperty('--g-price', area(top + T + 1, 2, `span ${P}`, -2));
   st.setProperty('--g-btn', area(top + T + P + 1, 1, `span ${B}`, -1));
-  // no grid behind the title and lead
-  const ar = abo.getBoundingClientRect(), rs = getComputedStyle(document.documentElement);
-  snapHole(document.getElementById('holeAbo'), contentRect(aboHead), ar.left, ar.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
 }
 
 // Background fades brown → yellow on scroll, the same way the hero fades green → brown: one colour for
