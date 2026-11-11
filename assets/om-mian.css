@@ -56,25 +56,26 @@ body.er-dag #logoBrown { opacity: 1; }
 .kap-cta { margin-top: 24px; }
 
 /* ================================================================ 00: the light comes on
-   Pinned stage. The bag stands in the dark; scrolling turns the lamp on (the lit render fades in over
-   the night render), then the studio-lit bag turns over and one bean falls out, on its way to day 1.
-   Only opacity and transform change. JS places the square scene on whole columns and rows. */
+   Pinned stage. One big bean in the dark; scrolling turns the light on (the night picture fades off the
+   lit one), the bean turns, then shrinks and travels to day 1 of the calendar. The big bean is fixed to
+   the screen (.k00-stor) so it can cross from this chapter to the next. Only opacity and transform change. */
 .kap-00 { padding-top: 0; min-height: 0; }
-.k00-scene { position: absolute; }
+.k00-scene { position: absolute; z-index: 1; pointer-events: none; }   /* over the title box's fill, under its text: the light is not cut by the box */
+.k00-pin > .container { position: relative; z-index: 2; }
+.k00-stor { position: fixed; z-index: 20; pointer-events: none; will-change: transform; }
+.k00-stor.fast { position: absolute; z-index: 1; }             /* reduced motion: stays in the opening */
 .k00-lag { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
-.k00-lampe, .k00-studio { opacity: 0; }
-.k00-scene.stille .k00-lag { transform: scale(1.4); }      /* stills (small screens, reduced motion): no turn, so the bag can be bigger */
-/* light: a cone from above and a warm glow on the grid around the bag */
-.k00-kjegle { position: absolute; left: 50%; width: 120%; margin-left: -60%; opacity: 0; pointer-events: none;
-              clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
-              background: linear-gradient(180deg, color-mix(in srgb, var(--cream-100) 34%, transparent), color-mix(in srgb, var(--yellow-400) 10%, transparent) 70%, transparent); }
-.k00-glod { position: absolute; inset: -35%; opacity: 0; pointer-events: none;
-            background: radial-gradient(closest-side, color-mix(in srgb, var(--yellow-400) 22%, transparent), transparent); }
-/* beans in three depth layers: each moves at its own speed with the scroll (--p00 goes 0 → 1) */
-.k00-bonner { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+/* light: soft, no edges. A wide wash from above and a warm glow on the grid around the bean. */
+.k00-lys { position: absolute; left: -30%; width: 160%; opacity: 0;
+           background: radial-gradient(ellipse 50% 100% at 50% 0%, color-mix(in srgb, var(--cream-100) 16%, transparent),
+                                       color-mix(in srgb, var(--yellow-400) 6%, transparent) 45%, transparent 72%); }
+.k00-glod { position: absolute; inset: -30%; opacity: 0;
+            background: radial-gradient(closest-side, color-mix(in srgb, var(--yellow-400) 20%, transparent),
+                                        color-mix(in srgb, var(--yellow-400) 7%, transparent) 55%, transparent); }
+/* small beans in depth layers around the big one: each moves at its own speed with the scroll (--p00 goes 0 → 1) */
+.k00-bonner { position: absolute; inset: -18%; opacity: 0; }
 .k00-bonne { position: absolute; height: auto; will-change: transform;
              transform: translate3d(0, calc(var(--p00, 0) * var(--v) * -1px), 0) rotate(var(--rot)); }
-.k00-fall { position: absolute; left: 46%; top: 70%; width: 9%; height: auto; opacity: 0; will-change: transform; pointer-events: none; }
 
 /* film window */
 .film { width: min(960px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 12px; overflow: hidden;
@@ -110,10 +111,9 @@ body.er-dag #logoBrown { opacity: 1; }
 .kal-dag i::before { content: attr(data-n); position: absolute; left: 7px; top: 6px; font: 600 12px/1 var(--text); }
 .kal-dag.pa i { opacity: 1; transform: none; }
 .kal-dag.merke i { background: var(--morning-mark); color: var(--morning-on-mark); }
-/* the bean that fell out of the bag in the opening lands in day 1 */
-.kal-bonne { position: absolute; left: 24%; top: 26%; width: 52%; height: auto; opacity: 0; pointer-events: none;
-             transform: translateY(-260%) rotate(-50deg); transition: opacity .2s ease, transform .7s cubic-bezier(.3, 1.28, .55, 1); }
-.kal-dag.pa .kal-bonne { opacity: 1; transform: rotate(12deg); }
+/* the bean from the opening lands in day 1: the fixed one hands over to this one when the stage pins */
+.kal-bonne { position: absolute; left: 5%; top: 50%; width: 90%; height: auto; aspect-ratio: 1; margin-top: -45%; opacity: 0; pointer-events: none; }
+.kal.har-bonne .kal-bonne { opacity: 1; }
 
 /* counter box */
 .teller { position: absolute; display: flex; align-items: center; gap: 16px; padding-inline: var(--pad); background: var(--bg); }
@@ -149,5 +149,4 @@ body.er-dag #logoBrown { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
   body, .site-header, #logoPink, #logoBrown, .kal-dag i, .lapper.bunke .lapp { transition: none; }
   .k00-pin, .k01-pin { position: relative; }
-  .k00-bonne, .kal-bonne { transition: none; }
 }

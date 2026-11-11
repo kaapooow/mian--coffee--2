@@ -30,28 +30,31 @@
   const byId = id => kap.find(k => k.id === id);
 
   // ---------------------------------------------------------------- 00: the light comes on
+  // One big bean in the dark. Scrolling turns the light on, the bean starts to turn, then it shrinks and
+  // travels down to land on day 1 of the calendar in chapter 01. Small beans float around it in depth layers.
   const k00 = byId('00');
   const lop0 = el('div', 'k00-lop'), pin0 = el('div', 'k00-pin');
   const scene = el('div', 'k00-scene'); scene.setAttribute('aria-hidden', 'true');
-  const sfx = light ? '-720' : '';
-  const BEANS = [                                   // left %, top %, width %, speed (px over the whole scroll), blur px, rotation, picture
-    [-6, 12, 9, 260, 3, -30, 1], [88, 4, 7, 180, 2, 40, 2], [96, 52, 13, 420, 0, 15, 3], [-12, 60, 12, 380, 0, -65, 2],
-    [8, 88, 6, 140, 2.5, 80, 3], [78, 86, 8, 220, 1, -20, 1], [40, -6, 5, 120, 3, 55, 2],
+  const BEANS = [                                   // left %, top %, width %, speed (px over the scroll), blur px, rotation, picture
+    [14, 8, 5, 150, 3, -30, 1],  [30, -4, 3.5, 90, 4, 60, 2],  [62, 2, 6, 240, 1.5, 40, 2],  [86, 10, 4, 130, 3, -70, 3],
+    [96, 34, 9, 420, 0, 15, 3],  [100, 62, 4, 160, 2.5, 100, 1], [88, 84, 7, 300, .5, -20, 1], [64, 96, 3.5, 110, 4, 30, 2],
+    [40, 92, 6, 260, 1, 80, 3],  [16, 86, 4, 140, 3, -50, 2],  [2, 66, 8, 380, 0, -65, 2],   [-4, 40, 3.5, 100, 4, 20, 1],
+    [6, 24, 6, 230, 1.5, 55, 3], [76, 26, 2.5, 70, 5, -10, 2], [26, 70, 2.5, 80, 5, 140, 1],
   ];
   scene.innerHTML = `
-    <div class="k00-glod"></div><div class="k00-kjegle"></div>
-    <img class="k00-lag k00-natt" src="${ROOT}assets/om-mian/pose-natt${sfx}.webp" alt="" draggable="false">
-    <img class="k00-lag k00-lampe" src="${ROOT}assets/om-mian/pose-lampe${sfx}.webp" alt="" draggable="false">
-    ${light || reduce ? `<img class="k00-lag k00-studio" src="${ROOT}frames/pose2-720/pose_001.webp" alt="" draggable="false">`
-                      : `<canvas class="k00-lag k00-studio" width="1200" height="1200"></canvas>`}
-    <img class="k00-fall" src="${ROOT}assets/om-mian/bonne-2.webp" alt="" draggable="false">
+    <div class="k00-lys"></div><div class="k00-glod"></div>
     <div class="k00-bonner">${BEANS.map(([l, t, w, v, b, r, n]) =>
-      `<img class="k00-bonne" src="${ROOT}assets/om-mian/bonne-${n}.webp" alt="" draggable="false" loading="lazy"
+      `<img class="k00-bonne" src="${ROOT}assets/om-mian/bonne-${n}.webp" alt="" draggable="false"
         style="left:${l}%;top:${t}%;width:${w}%;--v:${v};--rot:${r}deg;${b ? `filter:blur(${b}px);` : ''}">`).join('')}</div>`;
-  scene.classList.toggle('stille', light || reduce);
-  const q0 = c => scene.querySelector(c);
-  const P0 = { natt: q0('.k00-natt'), lampe: q0('.k00-lampe'), studio: q0('.k00-studio'), kjegle: q0('.k00-kjegle'), glod: q0('.k00-glod'),
-               bonner: q0('.k00-bonner'), fall: q0('.k00-fall') };
+  // the big bean: lit picture (the turning sequence on big screens, a still on small ones) with the night picture on top
+  const still = light || reduce;
+  const stor = el('div', 'k00-stor' + (reduce ? ' fast' : ''), `
+    ${still ? `<img class="k00-lag" src="${ROOT}frames/bonne-800/bonne_001.webp" alt="" draggable="false">`
+            : `<canvas class="k00-lag" width="800" height="800"></canvas>`}
+    <img class="k00-lag k00-natt" src="${ROOT}assets/om-mian/bonne-natt.webp" alt="" draggable="false">`);
+  stor.setAttribute('aria-hidden', 'true');
+  const P0 = { lys: scene.querySelector('.k00-lys'), glod: scene.querySelector('.k00-glod'), bonner: scene.querySelector('.k00-bonner'),
+               natt: stor.querySelector('.k00-natt'), lead: k00.head.querySelector('.kap-lead') };
   // "Se filmen": button in the title box, film in a dialog
   const cta = el('p', 'kap-cta', `<button class="btn btn--morgen" type="button">${D.film.knapp}
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13a.5.5 0 0 0 .77.42l10-6.5a.5.5 0 0 0 0-.84l-10-6.5A.5.5 0 0 0 8 5.5z"/></svg></button>`);
@@ -68,16 +71,17 @@
   film.addEventListener('click', e => { if (e.target === film) film.close(); });      // click on the backdrop
   film.addEventListener('close', () => video && video.pause());
 
-  pin0.append(k00.hole, k00.cont, scene);
+  pin0.append(k00.hole, scene, k00.cont);
+  reduce ? pin0.append(stor) : document.body.append(stor);   // the bean is fixed to the screen so it can travel between the chapters
   lop0.append(pin0);
   k00.sec.append(lop0);
-  const S00 = { top: 0, dist: 1, fall: 0, frame: -1, last: {} };
+  const S00 = { top: 0, dist: 1, cx: 0, cy: 0, size: 1, frame: -1, last: {} };
 
-  // the bag sequence (desktop only): the first frame at once, the rest when the browser is idle
+  // the turning bean (big screens only): the first frame at once, the rest when the browser is idle
   const N0 = 150, frames0 = [];
-  const ctx0 = P0.studio.getContext ? P0.studio.getContext('2d') : null;
+  const cv0 = stor.querySelector('canvas'), ctx0 = cv0 ? cv0.getContext('2d') : null;
   function loadFrames() {
-    const load = i => { const im = new Image(); im.decoding = 'async'; im.src = `${ROOT}frames/pose2/pose_${String(i + 1).padStart(3, '0')}.webp`;
+    const load = i => { const im = new Image(); im.decoding = 'async'; im.src = `${ROOT}frames/bonne-800/bonne_${String(i + 1).padStart(3, '0')}.webp`;
                         im.onload = () => { frames0[i] = im; if (i === 0 || i === S00.want) { S00.frame = -1; queue(); } }; };
     load(0);
     const rest = () => { for (let i = 1; i < N0; i++) load(i); };
@@ -86,63 +90,63 @@
   function drawFrame(i) {
     S00.want = i;
     while (i > 0 && !frames0[i]) i--;                 // nearest loaded frame before this one
-    if (!frames0[i] || i === S00.frame) return !!frames0[i];
+    if (!frames0[i] || i === S00.frame) return;
     S00.frame = i;
-    ctx0.clearRect(0, 0, 1200, 1200); ctx0.drawImage(frames0[i], 0, 0, 1200, 1200);
-    return true;
+    ctx0.clearRect(0, 0, 800, 800); ctx0.drawImage(frames0[i], 0, 0, 800, 800);
   }
 
   function layout00() {
-    const g = PG, stacked = g.C < 12 || innerHeight > innerWidth, head = k00.head;   // narrow or upright: scene under the title
-    // title box: wide enough for the longest word pair of the headline at its font-size (7 columns on desktop);
-    // centred in the height on wide screens
+    const g = PG, stacked = g.C < 12 || innerHeight > innerWidth, head = k00.head;   // narrow or upright: bean under the title
+    // title box: wide enough for the longest word pair of the headline at its font-size (7 columns on desktop)
     const fs = parseFloat(getComputedStyle(k00.h).fontSize);
     const headCols = Math.min(g.C, Math.max(4, Math.ceil((fs * 7.6 + 2 * PAD) / g.gx)));
-    head.style.width = px(headCols * g.gx); head.style.marginTop = '0px';
-    let rows0 = headBox(pin0, head, k00.hole);
-    if (!stacked && !reduce) {
-      head.style.marginTop = px(Math.max(0, Math.floor((g.rows - 1 - rows0) / 2) - 1) * g.gy);
-      rows0 = headBox(pin0, head, k00.hole);
-    }
-    // the scene: a square of whole cells. Wide: right of the title box. Narrow: under it.
-    let size, left, top;
+    head.style.width = px(headCols * g.gx); head.style.marginTop = '0px'; P0.lead.style.maxWidth = '';
+    let rows0 = headBox(pin0, head, k00.hole), size, cx, cy;
     if (stacked) {
-      size = Math.max(3, Math.min(g.C, g.rows - 1 - rows0 - 1));
-      left = g.m + Math.floor((g.C - size) / 2); top = 1 + rows0;
+      const free = (g.rows - 1 - rows0 - 1) * g.gy;                       // between the title box and the clock's row
+      size = Math.min(innerWidth * 1.3, free * 1.45);
+      cx = innerWidth / 2; cy = (1 + rows0) * g.gy + free / 2;
     } else {
-      size = Math.max(3, Math.min(g.C - headCols, g.rows - 2));
-      left = g.m + g.C - size; top = 1 + Math.floor((g.rows - 1 - size) / 2);
+      // the picture is a square with air around the bean: the bean itself is about 60 % of it.
+      // It sits to the right and reaches in over the title box, so the lead gets a shorter line to make room.
+      size = Math.min(g.rows * g.gy, (g.C - headCols + 4) * g.gx);
+      cx = (g.m + g.C - 3.2) * g.gx; cy = g.rows * g.gy * .56;
+      P0.lead.style.maxWidth = px(Math.max(220, cx - size * .3 - 16 - (g.c0 + PAD)));
+      rows0 = headBox(pin0, head, k00.hole);
+      if (!reduce) { head.style.marginTop = px(Math.max(0, Math.floor((g.rows - 1 - rows0) / 2) - 1) * g.gy); rows0 = headBox(pin0, head, k00.hole); }
     }
-    const sp = size * g.gx, tp = top * g.gy;
-    Object.assign(scene.style, { left: px(left * g.gx), top: px(tp), width: px(sp), height: px(size * g.gy) });
-    Object.assign(P0.kjegle.style, { top: px(-(tp - g.gy)), height: px(tp - g.gy + size * g.gy * .9) });   // from under the header row to the foot of the bag
-    const stageRows = reduce ? Math.max(top + size, 1 + rows0) + 1 : g.rows;
+    const box = { left: px(cx - size / 2), top: px(cy - size / 2), width: px(size), height: px(size) };
+    Object.assign(scene.style, box); Object.assign(stor.style, box);
+    Object.assign(P0.lys.style, { top: px(-(cy - size / 2) - g.gy), height: px(cy + size * .3 + g.gy) });   // from above the screen to below the bean, so no edge shows
+    const stageRows = reduce ? Math.max(Math.ceil((cy + size * .36) / g.gy), 1 + rows0) + 1 : g.rows;
     pin0.style.height = px(stageRows * g.gy);
-    const dist = reduce ? 0 : Math.round(g.rows * 2.6) * g.gy;
+    const dist = reduce ? 0 : Math.round(g.rows * 2.2) * g.gy;
     lop0.style.height = px(stageRows * g.gy + dist);
-    S00.dist = dist; S00.last = {};
-    S00.fall = stageRows * g.gy - (tp + sp * .7) + sp * .05;           // from the bag's mouth to just below the stage
+    Object.assign(S00, { dist, cx, cy, size, last: {} });
   }
 
   // write an opacity or transform only when it changed
   const set0 = (key, node, prop, val) => { if (S00.last[key] !== val) { S00.last[key] = val; node.style[prop] = val; } };
   function light00(y) {
-    const p = reduce ? 1 : clamp((y - S00.top) / S00.dist);
-    const lamp = reduce ? 1 : E.io(clamp((p - .06) / .26));              // the lamp comes on
-    let studio = reduce ? 1 : clamp((p - .36) / .12);                    // full light takes over
-    if (ctx0 && !drawFrame(reduce ? 0 : Math.round(E.io(clamp((p - .5) / .34)) * (N0 - 1)))) studio = 0;   // frames not in yet: stay on the lamp picture
-    const under = studio >= 1 ? '0' : null;                              // once full light covers them, the pictures under it go away
-    set0('natt', P0.natt, 'opacity', under ?? '1');
-    set0('lampe', P0.lampe, 'opacity', under ?? lamp.toFixed(3));
-    set0('kjegle', P0.kjegle, 'opacity', (lamp * (1 - .5 * studio)).toFixed(3));
-    set0('glod', P0.glod, 'opacity', lamp.toFixed(3));
-    set0('studio', P0.studio, 'opacity', studio.toFixed(3));
-    set0('bonner', P0.bonner, 'opacity', (reduce ? 1 : clamp((p - .2) / .2)).toFixed(3));
+    if (reduce) { set0('natt', P0.natt, 'opacity', '0'); set0('lys', P0.lys, 'opacity', '1'); set0('glod', P0.glod, 'opacity', '1'); set0('bonner', P0.bonner, 'opacity', '1'); return; }
+    const p = clamp((y - S00.top) / S00.dist);
+    const lamp = E.io(clamp((p - .05) / .3));                             // the light comes on
+    // the journey to day 1: starts while the stage is still pinned, ends exactly when the calendar's stage pins
+    const y0 = S00.top + S00.dist * .6, t = clamp((y - y0) / Math.max(1, S01.top - y0)), e = E.io(t);
+    const gone = y - (S00.top + S00.dist);                                // how far the opening stage has scrolled away
+    const bx = S00.cx, by = S00.cy - Math.max(0, gone);                   // where the big bean belongs right now
+    const tx = S01.cx, ty = S01.cy + (S01.top - y);                       // where day 1 is right now
+    const sc = lerp(1, S01.cell * .9 / S00.size, e);
+    set0('t', stor, 'transform', `translate3d(${(lerp(bx, tx, e) - S00.cx).toFixed(1)}px, ${(lerp(by, ty, e) - S00.cy).toFixed(1)}px, 0) scale(${sc.toFixed(4)})`);
+    const landed = y >= S01.top;                                          // from here the bean in the calendar cell takes over
+    set0('o', stor, 'opacity', landed ? '0' : '1');
+    if (S00.last.landed !== landed) { S00.last.landed = landed; kal.classList.toggle('har-bonne', landed); }
+    if (ctx0) drawFrame(Math.round(clamp((y - (S00.top + S00.dist * .3)) / Math.max(1, S01.top - (S00.top + S00.dist * .3))) * (N0 - 1)));
+    set0('natt', P0.natt, 'opacity', (1 - lamp).toFixed(3));
+    set0('lys', P0.lys, 'opacity', (lamp * (1 - e)).toFixed(3));
+    set0('glod', P0.glod, 'opacity', (lamp * (1 - e)).toFixed(3));
+    set0('bonner', P0.bonner, 'opacity', clamp((p - .12) / .25).toFixed(3));
     if (S00.last.pv !== p) { S00.last.pv = p; scene.style.setProperty('--p00', p.toFixed(4)); }
-    // one bean falls out of the bag and leaves through the bottom of the stage, towards day 1
-    const t = reduce ? 0 : clamp((p - .84) / .16);
-    set0('fallO', P0.fall, 'opacity', t > 0 ? '1' : '0');
-    set0('fallT', P0.fall, 'transform', `translate3d(0, ${(t * t * S00.fall).toFixed(1)}px, 0) rotate(${(t * 220).toFixed(1)}deg)`);
   }
 
   // ---------------------------------------------------------------- 01: the calendar
@@ -155,7 +159,8 @@
     const d = el('div', 'kal-dag' + (merker.has(i + 1) ? ' merke' : ''), `<i data-n="${i + 1}"></i>`);
     d.dataset.n = i + 1; kal.append(d); return d;
   });
-  dager[0].insertAdjacentHTML('beforeend', `<img class="kal-bonne" src="${ROOT}assets/om-mian/bonne-2.webp" alt="" draggable="false" loading="lazy">`);
+  dager[0].insertAdjacentHTML('beforeend', `<img class="kal-bonne" src="${ROOT}assets/om-mian/bonne-dag1.webp" alt="" draggable="false">`);   // the bean from the opening lands here
+  if (reduce) kal.classList.add('har-bonne');
   const teller = el('div', 'teller',
     `<span class="teller-tall">0</span><span class="teller-tekst"><b>av ${D.dager} dager</b><span class="teller-siste"></span></span>`);
   teller.setAttribute('aria-hidden', 'true');           // the headline already says 45 days; the list below has the milestones
@@ -173,7 +178,7 @@
   lop.append(pin);
   const listCont = el('div', 'container');             // holds the notes when they are a list under the stage
   k01.sec.append(lop, listCont);
-  const S01 = { top: 0, dist: 1, day: -1 };
+  const S01 = { top: 0, dist: 1, day: -1, cx: 0, cy: 0, cell: 1 };
 
   // 45 cells on whole columns and rows. u = cell size in page cells (1, or a half when the screen is low).
   function pickCalendar(maxCols, maxRows, units) {
@@ -227,6 +232,7 @@
     const calCols = cal.n * cal.u, calRows = cal.r * cal.u;
     const calLeft = stacked ? g.m : g.m + g.C - calCols, calTop = row0 + (stacked ? cRows : 0);
     Object.assign(kal.style, { left: px(calLeft * g.gx), top: px(calTop * g.gy) });
+    Object.assign(S01, { cx: calLeft * g.gx + ux / 2, cy: calTop * g.gy + uy / 2, cell: Math.min(ux, uy) });   // day 1, in the pinned stage
     kal.style.setProperty('--n', cal.n); kal.style.setProperty('--ux', px(ux)); kal.style.setProperty('--uy', px(uy));
 
     // notes: a pile under the counter if there is room for at least 2 rows, otherwise a list after the stage
