@@ -49,7 +49,7 @@
   // the big bean: lit picture (the turning sequence on big screens, a still on small ones) with the night picture on top
   const still = light || reduce;
   const stor = el('div', 'k00-stor' + (reduce ? ' fast' : ''), `
-    ${still ? `<img class="k00-lag" src="${ROOT}frames/bonne-800/bonne_001.webp" alt="" draggable="false">`
+    ${still ? `<img class="k00-lag" src="${ROOT}frames/bonne-800/bonne_150.webp" alt="" draggable="false">`
             : `<canvas class="k00-lag" width="800" height="800"></canvas>`}
     <img class="k00-lag k00-natt" src="${ROOT}assets/om-mian/bonne-natt.webp" alt="" draggable="false">`);
   stor.setAttribute('aria-hidden', 'true');
@@ -82,14 +82,14 @@
   const cv0 = stor.querySelector('canvas'), ctx0 = cv0 ? cv0.getContext('2d') : null;
   function loadFrames() {
     const load = i => { const im = new Image(); im.decoding = 'async'; im.src = `${ROOT}frames/bonne-800/bonne_${String(i + 1).padStart(3, '0')}.webp`;
-                        im.onload = () => { frames0[i] = im; if (i === 0 || i === S00.want) { S00.frame = -1; queue(); } }; };
-    load(0);
-    const rest = () => { for (let i = 1; i < N0; i++) load(i); };
+                        im.onload = () => { frames0[i] = im; if (i === N0 - 1 || i === S00.want) { S00.frame = -1; queue(); } }; };
+    load(N0 - 1);                                     // the front view: where the bean starts and ends
+    const rest = () => { for (let i = N0 - 2; i >= 0; i--) load(i); };
     'requestIdleCallback' in window ? requestIdleCallback(rest, { timeout: 2500 }) : setTimeout(rest, 800);
   }
   function drawFrame(i) {
     S00.want = i;
-    while (i > 0 && !frames0[i]) i--;                 // nearest loaded frame before this one
+    while (i < N0 - 1 && !frames0[i]) i++;            // nearest loaded frame after this one (they load from the front view backwards)
     if (!frames0[i] || i === S00.frame) return;
     S00.frame = i;
     ctx0.clearRect(0, 0, 800, 800); ctx0.drawImage(frames0[i], 0, 0, 800, 800);
@@ -141,7 +141,11 @@
     const landed = y >= S01.top;                                          // from here the bean in the calendar cell takes over
     set0('o', stor, 'opacity', landed ? '0' : '1');
     if (S00.last.landed !== landed) { S00.last.landed = landed; kal.classList.toggle('har-bonne', landed); }
-    if (ctx0) drawFrame(Math.round(clamp((y - (S00.top + S00.dist * .3)) / Math.max(1, S01.top - (S00.top + S00.dist * .3))) * (N0 - 1)));
+    // the bean starts seen from the front, turns away and swings back, so it also lands front up on day 1
+    if (ctx0) {
+      const u = clamp((y - (S00.top + S00.dist * .3)) / Math.max(1, S01.top - (S00.top + S00.dist * .3)));
+      drawFrame(N0 - 1 - Math.round((1 - Math.cos(u * 2 * Math.PI)) / 2 * 112));
+    }
     set0('natt', P0.natt, 'opacity', (1 - lamp).toFixed(3));
     set0('lys', P0.lys, 'opacity', (lamp * (1 - e)).toFixed(3));
     set0('glod', P0.glod, 'opacity', (lamp * (1 - e)).toFixed(3));
