@@ -289,15 +289,18 @@
   @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: clamp(12px, 2.5vh, 32px); } }
   .abo-head { position: relative; z-index: 2; }
   .abo-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
-  .abo-head p { margin-top: 16px; max-width: 46em; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; text-wrap: pretty; }
+  .abo-head p { margin-top: 16px; max-width: 60em; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; text-wrap: pretty; }
   .abo-cards { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--abo-gap, 16px);
                margin-top: clamp(16px, 3vh, 40px); }
-  .abo .card { overflow: hidden; box-shadow: none; }
-  .abo .card::before { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: 16px; pointer-events: none;
-                       box-shadow: inset 0 0 0 6px var(--brown); }     /* border on top of the bags */
+  .abo-cards { column-gap: var(--abo-gap, 16px); row-gap: var(--abo-row-gap, 16px); padding-bottom: var(--abo-over, 0px); }
+  .abo .card { box-shadow: none; }                                      /* no frame on these cards */
   .abo .card-top { justify-content: center; }
   .abo .card-btn:focus-visible { outline-color: var(--brown); }
-  .abo-img { grid-area: var(--g-img); position: relative; margin-inline: calc(var(--sx) * -1); }
+  /* the bag stack hangs out of the bottom of the card: 27 % of it below the card's edge, as in the sketch.
+     It scales down (around that edge) when the screen is too low for full size. */
+  .abo-img { position: absolute; left: 0; width: var(--card-w); z-index: 1; pointer-events: none;
+             height: calc(var(--card-w) * var(--stack-h)); bottom: calc(var(--card-w) * var(--stack-h) * -.27);
+             transform: scale(var(--bag-s, 1)); transform-origin: 50% 73%; }
   .abo-img img { position: absolute; display: block; height: auto; user-select: none; -webkit-user-drag: none;
                  filter: drop-shadow(0 6px 10px rgb(44 15 7 / .18)); }
   /* build-in: the cards rise one after the other, left to right, then their bags slide up into them */
@@ -1216,6 +1219,9 @@ const PLANS = [
                                   [.029, 0, .493], [.095, .048, .493], [.161, .097, .493], [.227, .145, .493]] },
 ];
 const abo = document.getElementById('abonnement'), aboCards = document.getElementById('aboCards'), aboHead = abo.querySelector('.abo-head');
+const BAG_RATIO = 618 / 429;                       // height / width of the bag picture
+PLANS.forEach(p => p.h = Math.max(...p.stack.map(([l, t, w]) => t + w * BAG_RATIO)));   // stack height, in card widths
+const OVER = .27;                                  // part of the stack below the card
 const aboEls = PLANS.map((p, i) => {
   const el = document.createElement('article');
   el.className = 'card';
@@ -1226,7 +1232,7 @@ const aboEls = PLANS.map((p, i) => {
     <div class="card-text"><h3 class="card-title">${p.bags} poser</h3></div>
     <p class="card-price"><span>${nok(p.price)}</span><span aria-hidden="true">·</span><span class="unit">per måned</span></p>
     <button class="card-btn" type="button">Legg i handlekurv ${ICON_BASKET}</button>
-    <div class="abo-img" aria-hidden="true">${p.stack.map(([l, t, w], k) =>
+    <div class="abo-img" aria-hidden="true" style="--stack-h:${p.h.toFixed(3)}">${p.stack.map(([l, t, w], k) =>
       `<img src="assets/produkter/tjuvstart-250.webp" alt="" loading="lazy" draggable="false"
         style="left:calc(var(--card-w) * ${l});top:calc(var(--card-w) * ${t});width:calc(var(--card-w) * ${w});--d:${400 + i * 140 + k * 50}ms">`).join('')}</div>`;
   const btn = el.querySelector('.card-btn');
@@ -1265,20 +1271,26 @@ function measureAbo() {
   }
   T = Math.max(T, 2);
   const B = rowsFor(96);
-  // bag rows: what is left of the screen on desktop (4 to 7), 6 when the cards are stacked
-  let imgR = 6;
+  // bags: full size if they fit. On desktop the whole stack (inside and below the card) has to fit the screen,
+  // so it shrinks on low screens; the card gets the rows for the part of the stack that is inside it.
+  const stackH = Math.max(...PLANS.map(p => p.h)) * cardW;
+  let s = 1;
   if (wide) {
     const cs = getComputedStyle(abo);
     const avail = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - aboHead.offsetHeight - parseFloat(getComputedStyle(aboCards).marginTop);
-    imgR = Math.max(4, Math.min(7, Math.floor((avail + .5) / sx) - top - T - P - B));
+    s = Math.max(.85, Math.min(1, (avail - (top + T + P + B) * sx) / stackH));   // never below 85 %: rather a slightly taller section
   }
+  const imgR = Math.max(3, Math.round(stackH * s * (1 - OVER) / sx));   // the stack may reach a little into the button rows, they have room
+  const over = stackH * s * OVER;
+  st.setProperty('--bag-s', s.toFixed(3));
+  st.setProperty('--abo-over', px(over));
+  st.setProperty('--abo-row-gap', px(over + 32));       // stacked cards: room for the bags hanging out above the next card
   const R = top + T + P + B + imgR;
   st.setProperty('--rows', R);
   st.setProperty('--g-top', area(1, 2, top + 1, -2));
   st.setProperty('--g-text', area(top + 1, 2, `span ${T}`, -2));
   st.setProperty('--g-price', area(top + T + 1, 2, `span ${P}`, -2));
   st.setProperty('--g-btn', area(top + T + P + 1, 1, `span ${B}`, -1));
-  st.setProperty('--g-img', area(top + T + P + B + 1, 2, -1, -2));
   // no grid behind the title and lead
   const ar = abo.getBoundingClientRect(), rs = getComputedStyle(document.documentElement);
   snapHole(document.getElementById('holeAbo'), contentRect(aboHead), ar.left, ar.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
