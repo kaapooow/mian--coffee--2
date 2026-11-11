@@ -60,11 +60,8 @@
   .skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
           background: var(--btn-dark); color: #fff; font-weight: 600; }
   .skip:focus { top: 12px; }
-  /* solid bar in the page colour, so the bag and beans pass under it instead of over the logo and links */
-  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light));
-                 background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                             linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                             var(--hdr-bg, var(--green)); }
+  /* no background: the header always sits on top, and whatever scrolls past goes behind it */
+  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light)); background: none; }
   /* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
   .site-header.on-yellow { --hdr: var(--brown) !important; --hdr-bg: var(--yellow) !important; --grid: #F2C930; }
   .site-header.on-yellow #logoDark, .site-header.on-yellow #logoPink { opacity: 0 !important; }
