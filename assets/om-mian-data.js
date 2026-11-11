@@ -46,6 +46,10 @@ window.OM_MIAN = {
     },
   ],
 
+  // Kapittel 00: kortfilmen bak «Se filmen». src = videofil (mp4), poster = stillbilde.
+  // PLASSHOLDER: filmen finnes ikke ennå, vinduet viser en plassholder så lenge src er null.
+  film: { knapp: 'Se filmen', tittel: 'Historien om MIAN', src: null, poster: null },
+
   // Kapittel 01: milepæler i kalenderen. dag = 1 til 45. bilde = filsti, eller null for plassholder.
   // PLASSHOLDER: alle dager, tekster og bilder under er eksempler.
   dager: 45,

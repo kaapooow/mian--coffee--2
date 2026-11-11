@@ -48,18 +48,59 @@ body.er-dag #logoBrown { opacity: 1; }
           background: var(--bg); font-family: var(--display); font-weight: 500; line-height: 1;
           font-variant-numeric: tabular-nums; pointer-events: none; }
 
+/* buttons on this page follow the morning: text colour as fill, sky colour as text */
+.btn--morgen { background: var(--morning-fg); color: var(--morning-bg); border: 0; cursor: pointer; font: inherit; font-weight: 600; gap: 8px;
+               transition: background-color .4s ease, color .4s ease, transform .15s ease; }
+.btn--morgen svg { width: 20px; height: 20px; }
+.btn--morgen:focus-visible { outline: 3px solid var(--morning-accent); outline-offset: 3px; }
+.kap-cta { margin-top: 24px; }
+
+/* ================================================================ 00: the light comes on
+   Pinned stage. The bag stands in the dark; scrolling turns the lamp on (the lit render fades in over
+   the night render), then the studio-lit bag turns over and one bean falls out, on its way to day 1.
+   Only opacity and transform change. JS places the square scene on whole columns and rows. */
+.kap-00 { padding-top: 0; min-height: 0; }
+.k00-scene { position: absolute; }
+.k00-lag { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+.k00-lampe, .k00-studio { opacity: 0; }
+.k00-scene.stille .k00-lag { transform: scale(1.4); }      /* stills (small screens, reduced motion): no turn, so the bag can be bigger */
+/* light: a cone from above and a warm glow on the grid around the bag */
+.k00-kjegle { position: absolute; left: 50%; width: 120%; margin-left: -60%; opacity: 0; pointer-events: none;
+              clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+              background: linear-gradient(180deg, color-mix(in srgb, var(--cream-100) 34%, transparent), color-mix(in srgb, var(--yellow-400) 10%, transparent) 70%, transparent); }
+.k00-glod { position: absolute; inset: -35%; opacity: 0; pointer-events: none;
+            background: radial-gradient(closest-side, color-mix(in srgb, var(--yellow-400) 22%, transparent), transparent); }
+/* beans in three depth layers: each moves at its own speed with the scroll (--p00 goes 0 → 1) */
+.k00-bonner { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+.k00-bonne { position: absolute; height: auto; will-change: transform;
+             transform: translate3d(0, calc(var(--p00, 0) * var(--v) * -1px), 0) rotate(var(--rot)); }
+.k00-fall { position: absolute; left: 46%; top: 70%; width: 9%; height: auto; opacity: 0; will-change: transform; pointer-events: none; }
+
+/* film window */
+.film { width: min(960px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 12px; overflow: hidden;
+        background: var(--brown-950); color: var(--pink-200); }
+.film::backdrop { background: color-mix(in srgb, var(--night-950) 80%, transparent); }
+.film-topp { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 12px 12px 20px; }
+.film-topp h2 { font-family: var(--display); font-weight: 500; font-size: 18px; line-height: 1.2; }
+.film-lukk { min-height: 44px; padding: 8px 16px; border: 0; border-radius: 9999px; background: var(--pink-200); color: var(--brown-800);
+             font: 600 15px/1 var(--text); cursor: pointer; }
+.film-lukk:focus-visible { outline: 3px solid var(--pink-500); outline-offset: 2px; }
+.film video, .film-ph { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--night-950); }
+.film-ph { display: grid; place-items: center; text-align: center; padding: 24px; font-weight: 500; line-height: 1.5;
+           background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pink-200) 6%, transparent) 0 12px, transparent 12px 24px), var(--night-950); }
+
 /* ================================================================ 01: 45 days
    The page grid becomes a calendar: 45 cells fill one by one as you scroll. The stage is pinned
    (sticky) while the days run; JS places the parts on whole columns and rows. */
 .kap-01 { padding-top: 0; min-height: 0; }
 .kap-01.hode-ute { padding-top: var(--header-h); }             /* headline above the pinned stage */
-.k01-lop { position: relative; }                               /* the scroll distance */
+.k00-lop, .k01-lop { position: relative; }                               /* the scroll distance */
 /* the stage carries its own grid on the sky colour, so the page grid behind it does not scroll past
    while the days run: the only thing that moves is the calendar filling up */
-.k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip;
+.k00-pin, .k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip;
            background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                        linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--bg); }
-.k01-pin > .container { padding-top: var(--header-h); }
+.k00-pin > .container, .k01-pin > .container { padding-top: var(--header-h); }
 
 .kal { position: absolute; display: grid; grid-template-columns: repeat(var(--n), var(--ux)); grid-auto-rows: var(--uy); }
 .kal-dag { position: relative; }
@@ -69,6 +110,10 @@ body.er-dag #logoBrown { opacity: 1; }
 .kal-dag i::before { content: attr(data-n); position: absolute; left: 7px; top: 6px; font: 600 12px/1 var(--text); }
 .kal-dag.pa i { opacity: 1; transform: none; }
 .kal-dag.merke i { background: var(--morning-mark); color: var(--morning-on-mark); }
+/* the bean that fell out of the bag in the opening lands in day 1 */
+.kal-bonne { position: absolute; left: 24%; top: 26%; width: 52%; height: auto; opacity: 0; pointer-events: none;
+             transform: translateY(-260%) rotate(-50deg); transition: opacity .2s ease, transform .7s cubic-bezier(.3, 1.28, .55, 1); }
+.kal-dag.pa .kal-bonne { opacity: 1; transform: rotate(12deg); }
 
 /* counter box */
 .teller { position: absolute; display: flex; align-items: center; gap: 16px; padding-inline: var(--pad); background: var(--bg); }
@@ -103,5 +148,6 @@ body.er-dag #logoBrown { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   body, .site-header, #logoPink, #logoBrown, .kal-dag i, .lapper.bunke .lapp { transition: none; }
-  .k01-pin { position: static; }
+  .k00-pin, .k01-pin { position: relative; }
+  .k00-bonne, .kal-bonne { transition: none; }
 }
