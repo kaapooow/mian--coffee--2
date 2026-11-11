@@ -3,7 +3,7 @@
 # no Next.js runtime, and only the files the site needs are published. Blender files,
 # scripts and Netlify's own .netlify folder are left out.
 [build]
-  command = "rm -rf dist && mkdir dist && cp -R index.html assets frames dist/"
+  command = "rm -rf dist && mkdir dist && cp -R index.html om-mian assets frames dist/"
   publish = "dist"
 
 [build.environment]

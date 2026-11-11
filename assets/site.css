@@ -1,0 +1,167 @@
+/* MIAN Coffee, shared styles: colour tokens, base, page grid, header and menu, buttons, title reveal.
+   Used by every page. Page-specific styles live in the page itself or in its own file. */
+
+/* ================================================================ colour tokens
+   Two layers. 1) Palette: every colour on the site, once, named by hue and step (950 darkest).
+   Only the semantic tokens use these. 2) Semantic: what a colour is for. Components use only these.
+   The scroll fades (green → brown in the hero, brown → yellow before the subscription) read the same
+   tokens in JS, and set the live context tokens --bg, --grid, --hdr and --hdr-bg as they go. */
+:root {
+  /* 1. palette */
+  --white:      #FFFFFF;
+  --black:      #000000;
+  --box-white:  #FCFCFC;
+  --stone-300:  #DBD6D5;
+  --green-900:  #2A4B2F;
+  --green-800:  #315737;
+  --green-700:  #2F6B2A;
+  --green-300:  #81E390;
+  --night-950:  #0D0810;   /* om-mian: the dark before the house wakes */
+  --plum-700:   #6B2F5B;   /* om-mian: first light */
+  --cream-100:  #FFF6DE;   /* om-mian: daylight */
+  --brown-950:  #1A0904;
+  --brown-900:  #230C06;
+  --brown-800:  #2C0F07;
+  --brown-700:  #31160F;
+  --olive-950:  #231906;
+  --pink-500:   #F67DFF;
+  --pink-200:   #FCCDFF;
+  --yellow-500: #F2C930;
+  --yellow-400: #FFD433;
+
+  /* 2. semantic: section backgrounds and their grid lines */
+  --surface-green:  var(--green-900);     /* hero */
+  --surface-brown:  var(--brown-800);     /* last hero frame, marquee, shop */
+  --surface-yellow: var(--yellow-400);    /* subscription */
+  --surface-card:   var(--white);
+  --line-green:     var(--green-800);
+  --line-brown:     var(--brown-700);
+  --line-yellow:    var(--yellow-500);
+  --marquee-front:  var(--brown-900);
+  --marquee-back:   var(--brown-950);
+  /* text and icons, by what they sit on */
+  --fg-on-green:    var(--green-300);     /* headline, logo, menu */
+  --fg-on-brown:    var(--pink-200);
+  --fg-on-light:    var(--brown-800);     /* on cards, white buttons and yellow */
+  --fg-inverse:     var(--white);         /* on dark buttons */
+  --accent:         var(--pink-500);      /* menu on brown, focus rings, active dot */
+  /* controls */
+  --btn-dark:       var(--olive-950);
+  --btn-light:      var(--white);
+  --btn-success:    var(--green-700);
+  --btn-hero:       var(--black);         /* the black CTA in the hero box */
+  --card-box:       var(--box-white);     /* the light boxes behind text on the cards */
+  --pill-on-yellow: color-mix(in srgb, var(--white) 65%, transparent);
+  --shadow:         color-mix(in srgb, var(--black) 25%, transparent);
+  --tag-bg:         var(--stone-300);
+
+  --display: 'Clash Display', 'Arial Black', sans-serif;
+  --text: 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* layout: one content width for the whole site, gutters grow with the screen */
+  --max: 1280px;        /* max content width, the container is this + gutters */
+  --gutter: 20px;       /* < 640 px: mobile */
+  --header-h: 64px;
+}
+@media (min-width: 640px)  { :root { --gutter: 32px; } }                       /* tablet */
+@media (min-width: 1024px) { :root { --gutter: 48px; --header-h: 80px; } }     /* desktop */
+@media (min-width: 1440px) { :root { --gutter: 64px; } }                       /* wide, content stops at --max */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--surface-green); }
+body { color: var(--fg-on-light); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+/* Grid on every section. Cells are as square as possible with a whole number of cells across the
+   viewport's width and height (about 112 px on a 1528 px wide screen); JS sets --gx and --gy.
+   --grid is the line colour: --line-green on the green hero, --line-brown on brown. --bg is the current page colour. */
+:root { --gx: 112px; --gy: 112px; --grid: var(--line-green); --bg: var(--surface-green); }
+.gridlines { background-image: linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(180deg, var(--grid) 1px, transparent 1px);
+             background-size: var(--gx) var(--gy); }
+.hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+/* no grid behind headline, lead and buttons: whole cells are cleared around them */
+.hole { position: absolute; left: 0; top: 0; width: 0; height: 0; background: var(--bg); pointer-events: none; }
+
+/* Page grid: the content always starts in column 2 and stops before the last column (one untouched column
+   each side, more on very wide screens so the content keeps its max width). JS sets --c0 (left edge of
+   column 2) and --cw (width of the content columns); the fallbacks are only for the first paint. */
+:root { --pad: 24px; }          /* padding inside the boxes behind titles and leads */
+.container { width: var(--cw, calc(100% - 2 * var(--gutter))); margin-left: var(--c0, var(--gutter)); margin-right: 0;
+             padding-inline: 0; max-width: none; }
+
+/* header: fixed to the top of the window, outside the animated stage */
+.skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
+        background: var(--btn-dark); color: var(--fg-inverse); font-weight: 600; }
+.skip:focus { top: 12px; }
+/* no background: the header always sits on top, and whatever scrolls past goes behind it */
+.site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--fg-on-green)); background: none; }
+/* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
+/* --hdr-y and --logo-y follow the brown → yellow fade (set on scroll, like the green → brown one in the hero) */
+.site-header.on-yellow { --hdr: var(--hdr-y) !important; --hdr-bg: var(--sec-y) !important; }
+.site-header.on-yellow #logoDark { opacity: 0 !important; }
+.site-header.on-yellow #logoPink { opacity: calc(1 - var(--logo-y)) !important; }
+.site-header.on-yellow #logoBrown { opacity: var(--logo-y) !important; }
+.site-header.is-yellow .nav-pill { background: var(--pill-on-yellow); }
+.site-header.is-yellow .nav a[aria-current] { color: var(--surface-yellow); }
+@media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: var(--pill-on-yellow); } }
+.header-inner { height: var(--header-h); padding-inline: var(--pad); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
+.logo .mark { position: relative; width: 40px; height: 32px; }
+.logo .mark img { position: absolute; inset: 0; width: 40px; height: 32px; display: block; }
+.logo span { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: .9; }
+/* menu: rounded pills. Hover = a pale pill that slides from link to link (.nav-pill),
+   selected = solid pill in the header colour. Colours follow --hdr, so they turn pink on the brown part. */
+.nav { position: relative; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 16px; }
+.nav a { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px;
+         border-radius: 9999px; line-height: 1; transition: color .25s ease, background-color .25s ease; }
+.nav a.is-hover { color: var(--fg-on-light); }
+.nav a[aria-current] { background: var(--hdr, var(--fg-on-green)); color: var(--fg-on-light); }
+.nav a:focus-visible { outline: 2px solid var(--hdr, var(--fg-on-green)); outline-offset: 3px; }
+.nav-pill { position: absolute; top: 0; left: 0; height: 44px; border-radius: 9999px; pointer-events: none; opacity: 0;
+            background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white));
+            transition: transform .35s cubic-bezier(.22, 1, .36, 1), width .35s cubic-bezier(.22, 1, .36, 1), opacity .2s ease; }
+.nav-pill.on { opacity: 1; }
+.nav-pill.jump { transition: opacity .2s ease; }
+@media (min-width: 1280px) { .nav { gap: 6px; font-size: 18px; } .nav a { padding-inline: 20px; } }
+@media (prefers-reduced-motion: reduce) { .nav-pill, .nav a { transition: none; } }
+.menu-btn { display: none; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; background: none; border: 0;
+            color: inherit; font: 600 16px/1 var(--text); cursor: pointer; }
+.menu-btn .bars { position: relative; width: 22px; height: 2px; background: currentColor; transition: background .2s; }
+.menu-btn .bars::before, .menu-btn .bars::after { content: ""; position: absolute; left: 0; width: 22px; height: 2px;
+            background: currentColor; transition: transform .2s; }
+.menu-btn .bars::before { transform: translateY(-7px); }
+.menu-btn .bars::after { transform: translateY(7px); }
+.site-header.open .bars { background: transparent; }
+.site-header.open .bars::before { transform: rotate(45deg); }
+.site-header.open .bars::after { transform: rotate(-45deg); }
+
+/* under 1024 px the five links don't fit next to the logo: menu button + full-width panel */
+@media (max-width: 1023px) {
+  .menu-btn { display: inline-flex; }
+  .nav { display: none; position: fixed; inset: var(--header-h) 0 auto; flex-direction: column; gap: 0;
+         padding: 8px var(--c0, var(--gutter)) 32px; background: var(--hdr-bg, var(--surface-green)); box-shadow: 0 24px 32px -24px var(--shadow); }
+  .site-header.open { background: var(--hdr-bg, var(--surface-green)); }
+  .site-header.open .nav { display: flex; }
+  .nav { align-items: stretch; gap: 4px; padding-top: 12px; }
+  .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; min-height: 56px;
+           padding: 12px 16px; border-radius: 16px; justify-content: space-between; }
+  .nav a::after { content: "→"; font-family: var(--text); font-size: 20px; opacity: 0; translate: -8px 0;
+                  transition: opacity .25s ease, translate .25s ease; }
+  .nav a:hover, .nav a:focus-visible { background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white)); color: var(--fg-on-light); }
+  .nav a:hover::after, .nav a:focus-visible::after, .nav a[aria-current]::after { opacity: 1; translate: 0 0; }
+  .nav-pill { display: none; }
+}
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px; padding: 10px 20px; border-radius: 48px;
+       font-weight: 600; font-size: 16px; line-height: normal; white-space: nowrap; transition: transform .15s ease; }
+@media (min-width: 1024px) { .btn { padding: 12px 24px; font-size: 18px; } }
+.btn:hover { transform: translateY(-1px); }
+.btn img { width: 24px; height: 24px; display: block; }
+.btn--dark { background: var(--btn-dark); color: var(--fg-inverse); }
+.btn--white { background: var(--btn-light); color: var(--fg-on-light); }
+
+.tw { display: inline-block; white-space: nowrap; }
+.ch { display: inline-block; }
+.reveal-wait .ch { opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }

@@ -8,73 +8,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/site.css">
 <style>
-  /* ================================================================ colour tokens
-     Two layers. 1) Palette: every colour on the site, once, named by hue and step (950 darkest).
-     Only the semantic tokens use these. 2) Semantic: what a colour is for. Components use only these.
-     The scroll fades (green → brown in the hero, brown → yellow before the subscription) read the same
-     tokens in JS, and set the live context tokens --bg, --grid, --hdr and --hdr-bg as they go. */
-  :root {
-    /* 1. palette */
-    --white:      #FFFFFF;
-    --black:      #000000;
-    --box-white:  #FCFCFC;
-    --stone-300:  #DBD6D5;
-    --green-900:  #2A4B2F;
-    --green-800:  #315737;
-    --green-700:  #2F6B2A;
-    --green-300:  #81E390;
-    --brown-950:  #1A0904;
-    --brown-900:  #230C06;
-    --brown-800:  #2C0F07;
-    --brown-700:  #31160F;
-    --olive-950:  #231906;
-    --pink-500:   #F67DFF;
-    --pink-200:   #FCCDFF;
-    --yellow-500: #F2C930;
-    --yellow-400: #FFD433;
-
-    /* 2. semantic: section backgrounds and their grid lines */
-    --surface-green:  var(--green-900);     /* hero */
-    --surface-brown:  var(--brown-800);     /* last hero frame, marquee, shop */
-    --surface-yellow: var(--yellow-400);    /* subscription */
-    --surface-card:   var(--white);
-    --line-green:     var(--green-800);
-    --line-brown:     var(--brown-700);
-    --line-yellow:    var(--yellow-500);
-    --marquee-front:  var(--brown-900);
-    --marquee-back:   var(--brown-950);
-    /* text and icons, by what they sit on */
-    --fg-on-green:    var(--green-300);     /* headline, logo, menu */
-    --fg-on-brown:    var(--pink-200);
-    --fg-on-light:    var(--brown-800);     /* on cards, white buttons and yellow */
-    --fg-inverse:     var(--white);         /* on dark buttons */
-    --accent:         var(--pink-500);      /* menu on brown, focus rings, active dot */
-    /* controls */
-    --btn-dark:       var(--olive-950);
-    --btn-light:      var(--white);
-    --btn-success:    var(--green-700);
-    --btn-hero:       var(--black);         /* the black CTA in the hero box */
-    --card-box:       var(--box-white);     /* the light boxes behind text on the cards */
-    --pill-on-yellow: color-mix(in srgb, var(--white) 65%, transparent);
-    --shadow:         color-mix(in srgb, var(--black) 25%, transparent);
-    --tag-bg:         var(--stone-300);
-
-    --display: 'Clash Display', 'Arial Black', sans-serif;
-    --text: 'IBM Plex Sans', system-ui, sans-serif;
-
-    /* layout: one content width for the whole site, gutters grow with the screen */
-    --max: 1280px;        /* max content width, the container is this + gutters */
-    --gutter: 20px;       /* < 640 px: mobile */
-    --header-h: 64px;
-  }
-  @media (min-width: 640px)  { :root { --gutter: 32px; } }                       /* tablet */
-  @media (min-width: 1024px) { :root { --gutter: 48px; --header-h: 80px; } }     /* desktop */
-  @media (min-width: 1440px) { :root { --gutter: 64px; } }                       /* wide, content stops at --max */
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--surface-green); }
-  body { color: var(--fg-on-light); font-family: var(--text); -webkit-font-smoothing: antialiased; }
-  a { color: inherit; text-decoration: none; }
 
   /* the animation runs over 640vh of scrolling (as before); the last frame then holds for a short moment
      instead of 160vh, so the shop follows closely */
@@ -86,94 +21,7 @@
   .stage { position: absolute; left: 0; top: 0; width: 1528px; height: 1016px; transform-origin: 0 0; pointer-events: none; }
   .stage--back { z-index: 1; }
   .stage--front { z-index: 3; }
-  /* Grid on every section. Cells are as square as possible with a whole number of cells across the
-     viewport's width and height (about 112 px on a 1528 px wide screen); JS sets --gx and --gy.
-     --grid is the line colour: --line-green on the green hero, --line-brown on brown. --bg is the current page colour. */
-  :root { --gx: 112px; --gy: 112px; --grid: var(--line-green); --bg: var(--surface-green); }
-  .gridlines { background-image: linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(180deg, var(--grid) 1px, transparent 1px);
-               background-size: var(--gx) var(--gy); }
-  .hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
-  /* no grid behind headline, lead and buttons: whole cells are cleared around them */
-  .hole { position: absolute; left: 0; top: 0; width: 0; height: 0; background: var(--bg); pointer-events: none; }
 
-  /* Page grid: the content always starts in column 2 and stops before the last column (one untouched column
-     each side, more on very wide screens so the content keeps its max width). JS sets --c0 (left edge of
-     column 2) and --cw (width of the content columns); the fallbacks are only for the first paint. */
-  :root { --pad: 24px; }          /* padding inside the boxes behind titles and leads */
-  .container { width: var(--cw, calc(100% - 2 * var(--gutter))); margin-left: var(--c0, var(--gutter)); margin-right: 0;
-               padding-inline: 0; max-width: none; }
-
-  /* header: fixed to the top of the window, outside the animated stage */
-  .skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
-          background: var(--btn-dark); color: var(--fg-inverse); font-weight: 600; }
-  .skip:focus { top: 12px; }
-  /* no background: the header always sits on top, and whatever scrolls past goes behind it */
-  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--fg-on-green)); background: none; }
-  /* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
-  /* --hdr-y and --logo-y follow the brown → yellow fade (set on scroll, like the green → brown one in the hero) */
-  .site-header.on-yellow { --hdr: var(--hdr-y) !important; --hdr-bg: var(--sec-y) !important; }
-  .site-header.on-yellow #logoDark { opacity: 0 !important; }
-  .site-header.on-yellow #logoPink { opacity: calc(1 - var(--logo-y)) !important; }
-  .site-header.on-yellow #logoBrown { opacity: var(--logo-y) !important; }
-  .site-header.is-yellow .nav-pill { background: var(--pill-on-yellow); }
-  .site-header.is-yellow .nav a[aria-current] { color: var(--surface-yellow); }
-  @media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: var(--pill-on-yellow); } }
-  .header-inner { height: var(--header-h); padding-inline: var(--pad); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
-  .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
-  .logo .mark { position: relative; width: 40px; height: 32px; }
-  .logo .mark img { position: absolute; inset: 0; width: 40px; height: 32px; display: block; }
-  .logo span { font-family: var(--display); font-weight: 400; font-size: 18px; line-height: .9; }
-  /* menu: rounded pills. Hover = a pale pill that slides from link to link (.nav-pill),
-     selected = solid pill in the header colour. Colours follow --hdr, so they turn pink on the brown part. */
-  .nav { position: relative; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 16px; }
-  .nav a { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px;
-           border-radius: 9999px; line-height: 1; transition: color .25s ease, background-color .25s ease; }
-  .nav a.is-hover { color: var(--fg-on-light); }
-  .nav a[aria-current] { background: var(--hdr, var(--fg-on-green)); color: var(--fg-on-light); }
-  .nav a:focus-visible { outline: 2px solid var(--hdr, var(--fg-on-green)); outline-offset: 3px; }
-  .nav-pill { position: absolute; top: 0; left: 0; height: 44px; border-radius: 9999px; pointer-events: none; opacity: 0;
-              background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white));
-              transition: transform .35s cubic-bezier(.22, 1, .36, 1), width .35s cubic-bezier(.22, 1, .36, 1), opacity .2s ease; }
-  .nav-pill.on { opacity: 1; }
-  .nav-pill.jump { transition: opacity .2s ease; }
-  @media (min-width: 1280px) { .nav { gap: 6px; font-size: 18px; } .nav a { padding-inline: 20px; } }
-  @media (prefers-reduced-motion: reduce) { .nav-pill, .nav a { transition: none; } }
-  .menu-btn { display: none; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; background: none; border: 0;
-              color: inherit; font: 600 16px/1 var(--text); cursor: pointer; }
-  .menu-btn .bars { position: relative; width: 22px; height: 2px; background: currentColor; transition: background .2s; }
-  .menu-btn .bars::before, .menu-btn .bars::after { content: ""; position: absolute; left: 0; width: 22px; height: 2px;
-              background: currentColor; transition: transform .2s; }
-  .menu-btn .bars::before { transform: translateY(-7px); }
-  .menu-btn .bars::after { transform: translateY(7px); }
-  .site-header.open .bars { background: transparent; }
-  .site-header.open .bars::before { transform: rotate(45deg); }
-  .site-header.open .bars::after { transform: rotate(-45deg); }
-
-  /* under 1024 px the five links don't fit next to the logo: menu button + full-width panel */
-  @media (max-width: 1023px) {
-    .menu-btn { display: inline-flex; }
-    .nav { display: none; position: fixed; inset: var(--header-h) 0 auto; flex-direction: column; gap: 0;
-           padding: 8px var(--c0, var(--gutter)) 32px; background: var(--hdr-bg, var(--surface-green)); box-shadow: 0 24px 32px -24px var(--shadow); }
-    .site-header.open { background: var(--hdr-bg, var(--surface-green)); }
-    .site-header.open .nav { display: flex; }
-    .nav { align-items: stretch; gap: 4px; padding-top: 12px; }
-    .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; min-height: 56px;
-             padding: 12px 16px; border-radius: 16px; justify-content: space-between; }
-    .nav a::after { content: "→"; font-family: var(--text); font-size: 20px; opacity: 0; translate: -8px 0;
-                    transition: opacity .25s ease, translate .25s ease; }
-    .nav a:hover, .nav a:focus-visible { background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white)); color: var(--fg-on-light); }
-    .nav a:hover::after, .nav a:focus-visible::after, .nav a[aria-current]::after { opacity: 1; translate: 0 0; }
-    .nav-pill { display: none; }
-  }
-
-  /* buttons */
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 48px; padding: 10px 20px; border-radius: 48px;
-         font-weight: 600; font-size: 16px; line-height: normal; white-space: nowrap; transition: transform .15s ease; }
-  @media (min-width: 1024px) { .btn { padding: 12px 24px; font-size: 18px; } }
-  .btn:hover { transform: translateY(-1px); }
-  .btn img { width: 24px; height: 24px; display: block; }
-  .btn--dark { background: var(--btn-dark); color: var(--fg-inverse); }
-  .btn--white { background: var(--btn-light); color: var(--fg-on-light); }
 
   /* copy: normal HTML on the same container as the header.
      Mobile first: text at the top under the header, the 3D scene below it. */
@@ -383,9 +231,6 @@
 
   /* build-in the first time the section scrolls into view */
   /* titles fly in letter by letter (see revealTitle) */
-  .tw { display: inline-block; white-space: nowrap; }
-  .ch { display: inline-block; }
-  .reveal-wait .ch { opacity: 0; }
 
   /* page-load sequence (under 3 s): the grid draws from the top down while the header slides in,
      then the headline, lead, buttons and the bags build up. .intro-wait holds everything back until the JS starts it. */
@@ -407,7 +252,6 @@
 
   .loader { position: fixed; left: 16px; bottom: 14px; color: var(--fg-on-green); font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
   .end { height: 0; }
-  @media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }
 </style>
 <script>
   // hold the hero back until the load sequence starts; never longer than 4 s, even if a script fails
@@ -433,7 +277,7 @@
       <a href="#">Produkter</a>
       <a href="#">Om oss</a>
       <a href="#">Samarbeid</a>
-      <a href="#">Støtt oss</a>
+      <a href="om-mian/">Om Mian</a>
       <a href="#">Kontakt</a>
     </nav>
   </div>
@@ -519,58 +363,8 @@
 </main>
 <div class="loader" id="loader">Laster …</div>
 
+<script src="assets/site.js"></script>
 <script>
-// ------------------------------------------------------------------ title reveal
-// Titles come in letter by letter: each letter slides 20 px in from the left while it goes from
-// invisible and 10 px blurred to sharp, about 0.7 s each, 28 ms after the one before.
-// Words stay unbroken; screen readers get the plain title through aria-label.
-const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
-function splitTitle(el) {
-  if (el.dataset.split) return;
-  el.dataset.split = '1';
-  el.setAttribute('aria-label', el.textContent.replace(/\s+/g, ' ').trim());
-  const walk = node => {
-    for (const n of [...node.childNodes]) {
-      if (n.nodeType === 1) { if (n.tagName !== 'BR' && !n.classList.contains('baseline')) walk(n); continue; }
-      if (n.nodeType !== 3 || !n.textContent.trim()) continue;
-      const frag = document.createDocumentFragment();
-      n.textContent.split(/(\s+)/).forEach(part => {
-        if (!part) return;
-        if (/^\s+$/.test(part)) { frag.append(document.createTextNode(' ')); return; }
-        const w = document.createElement('span'); w.className = 'tw'; w.setAttribute('aria-hidden', 'true');
-        for (const c of part) { const sp = document.createElement('span'); sp.className = 'ch'; sp.textContent = c; w.append(sp); }
-        frag.append(w);
-      });
-      n.replaceWith(frag);
-    }
-  };
-  walk(el);
-}
-function revealTitle(el, delay = 0) {
-  splitTitle(el);
-  el.classList.remove('reveal-wait');
-  if (REDUCE_MOTION) return;
-  el._anims = [...el.querySelectorAll('.ch')].map((c, i) => c.animate(
-    [{ opacity: 0, filter: 'blur(10px)', transform: 'translateX(-20px)' }, { opacity: 1, filter: 'blur(0px)', transform: 'none' }],
-    { duration: 700, delay: delay + i * 28, easing: 'cubic-bezier(.16, 1, .3, 1)', fill: 'both' }));
-}
-function hideTitle(el) {                      // ready to play again
-  splitTitle(el);
-  (el._anims || []).forEach(a => a.cancel()); el._anims = null;
-  el.classList.add('reveal-wait');
-}
-// width of the widest line of a heading (its letters are separate boxes, so group them per line)
-function widestLine(el) {
-  const rg = document.createRange(); rg.selectNodeContents(el);
-  const lines = {};
-  for (const r of rg.getClientRects()) {
-    if (!r.width) continue;
-    const k = Math.round(r.top / 4);
-    const l = lines[k] || (lines[k] = [Infinity, -Infinity]);
-    l[0] = Math.min(l[0], r.left); l[1] = Math.max(l[1], r.right);
-  }
-  return Math.max(...Object.values(lines).map(([a, b]) => b - a));
-}
 // ------------------------------------------------------------------ assets
 const N = 150;
 const small = matchMedia('(max-width: 768px)').matches;
@@ -590,23 +384,6 @@ const bagMid = new Image(); bagMid.onload = onload; bagMid.src = 'assets/pose-om
 const bagBack = new Image(); bagBack.onload = onload; bagBack.src = 'assets/pose-drommestart.webp';
 
 // -------------------------------------------------------------- helpers
-const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
-const lerp = (a, b, t) => a + (b - a) * t;
-const E = {
-  lin: t => t, in: t => t * t, out: t => 1 - (1 - t) * (1 - t),
-  io: t => t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
-};
-// keys: [[progress, value, ease?], ...]
-function tr(p, keys) {
-  if (p <= keys[0][0]) return keys[0][1];
-  for (let i = 1; i < keys.length; i++) {
-    const [p1, v1, e = 'io'] = keys[i], [p0, v0] = keys[i - 1];
-    if (p <= p1) return lerp(v0, v1, E[e](clamp((p - p0) / (p1 - p0))));
-  }
-  return keys[keys.length - 1][1];
-}
-const mix = (a, b, t) => a.map((v, i) => Math.round(lerp(v, b[i], t)));
-const rgb = c => `rgb(${c.join(',')})`;
 
 // ------------------------------------------------------------- timeline
 // Six design frames (Figma 371:4484). K[n] is the scroll progress where frame n+1 is shown.
@@ -663,12 +440,9 @@ function paint(c, img, key) {
 const stageBack = document.getElementById('stageBack');
 const intro = document.getElementById('intro');
 const outro = document.getElementById('outro'), outroH = document.getElementById('outroH'), outroA = document.getElementById('outroA');
-const header = document.getElementById('header');
 const logoDark = document.getElementById('logoDark'), logoPink = document.getElementById('logoPink');
 const swirl = document.getElementById('swirlPath');
 // colours for the scroll fades, read from the CSS palette tokens (hex) so there is one source
-const TOKENS = getComputedStyle(document.documentElement);
-const tok = name => { const h = TOKENS.getPropertyValue(name).trim().replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
 const GREEN = tok('--green-900'), BROWN = tok('--brown-800'), INK = tok('--green-300'), PINK = tok('--pink-500');   // INK: header text on the green
 const LINE_GREEN = tok('--green-800'), LINE_BROWN = tok('--brown-700'), YELLOW = tok('--yellow-400'), LINE_YELLOW = tok('--yellow-500');
 
@@ -701,64 +475,10 @@ function layout() {
   layoutGrid();
   dirty = true;
 }
-// Page grid. Cells are about 88 px on desktop, smaller on narrow screens (a 16th of the width, 48–88 px),
-// with a whole number of cells across both the width and the height of the viewport, so they end up as
-// square as possible. Content goes from column 2 to the column before the last; on very wide screens
-// more columns stay empty on both sides so the content is never wider than about 1280 px.
-// The header is the first row.
-const root = document.documentElement;
-let PG = {};
 const holeIntro = document.getElementById('holeIntro'), holeOutro = document.getElementById('holeOutro');
-function gridCells() {
-  const W = innerWidth, H = innerHeight;
-  const cols = Math.max(6, Math.round(W / Math.max(48, Math.min(88, W / 16))));
-  const gx = W / cols, rows = Math.max(4, Math.round(H / gx)), gy = H / rows;
-  const m = Math.max(1, Math.ceil((cols - Math.floor(1280 / gx)) / 2));   // empty columns on each side
-  const C = cols - 2 * m;
-  PG = { gx, gy, cols, rows, m, C, c0: m * gx, cw: C * gx };
-  const px = v => v + 'px';
-  root.style.setProperty('--gx', px(gx)); root.style.setProperty('--gy', px(gy));
-  root.style.setProperty('--c0', px(PG.c0)); root.style.setProperty('--cw', px(PG.cw));
-  root.style.setProperty('--header-h', px(gy));
-  return PG;
-}
-gridCells();
-// A title box: whole rows high (title and lead plus 24 px padding), starting at the row under the header,
-// from column 2 as many columns wide as the text needs. The text sits 24 px in and is centred in the height.
-function headBox(sec, head, hole) {
-  const g = PG;
-  head.style.height = '';
-  const r = contentRect(head);
-  const rows = Math.max(1, Math.ceil((r.bottom - r.top + 2 * PAD) / g.gy));
-  head.style.height = rows * g.gy + 'px';
-  const s = sec.getBoundingClientRect(), h = head.getBoundingClientRect(), rr = contentRect(head);
-  const c1 = Math.min(g.m + g.C, Math.max(g.m + 1, Math.ceil((rr.right + PAD - s.left) / g.gx - .02)));
-  const top = Math.round((h.top - s.top) / g.gy) * g.gy;
-  Object.assign(hole.style, { left: g.c0 + 1 + 'px', top: top + 1 + 'px', width: (c1 - g.m) * g.gx - 1 + 'px', height: rows * g.gy - 1 + 'px' });
-  return rows;
-}
-// clear whole cells around an element's content plus 24 px all round; r = its rect, ox/oy = the grid's origin.
-// Stays inside the content columns: from column 2, never into the last column.
-function snapHole(hole, r, ox, oy, gx, gy) {
-  const l = Math.max(PG.m, Math.floor((r.left - PAD - ox) / gx + .02)) * gx;
-  const rr = Math.min(PG.m + PG.C, Math.ceil((r.right + PAD - ox) / gx - .02)) * gx;
-  const t = Math.floor((r.top - PAD - oy) / gy + .02) * gy, b = Math.ceil((r.bottom + PAD - oy) / gy - .02) * gy;
-  Object.assign(hole.style, { left: l + 1 + 'px', top: t + 1 + 'px', width: rr - l - 1 + 'px', height: b - t - 1 + 'px' });
-}
-// the area the copy really covers: the text itself and the buttons, not the full width of their blocks
-function contentRect(el) {
-  const rs = [], rg = document.createRange();
-  const walk = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, { acceptNode: n => n.textContent.trim() ? 1 : 3 });
-  for (let n; (n = walk.nextNode());) { rg.selectNodeContents(n); rs.push(...rg.getClientRects()); }
-  el.querySelectorAll('a, button').forEach(b => rs.push(b.getBoundingClientRect()));
-  const v = rs.filter(r => r.width && r.height);
-  return { left: Math.min(...v.map(r => r.left)), top: Math.min(...v.map(r => r.top)),
-           right: Math.max(...v.map(r => r.right)), bottom: Math.max(...v.map(r => r.bottom)) };
-}
 // Hero copy box: 5 columns wide starting in column 2, as many rows as the copy needs plus 24 px
 // padding all round. The copy sits inside it. Centred in the height on wide screens, right under
 // the header on narrow ones. The headline shrinks if it would not fit the 5 columns.
-const PAD = 24;
 function placeIntro() {
   const { gx, gy, c0, C } = gridCells();
   const vp = document.querySelector('.viewport').getBoundingClientRect();
@@ -823,48 +543,6 @@ function placeStage(p) {
   stage.style.transform = t; stageBack.style.transform = t;
 }
 
-// mobile menu: toggle, close on Escape, on link click and when the screen gets wide again
-const menuBtn = document.getElementById('menuBtn'), menuLabel = document.getElementById('menuLabel');
-function setMenu(open) {
-  header.classList.toggle('open', open);
-  menuBtn.setAttribute('aria-expanded', open);
-  menuLabel.textContent = open ? 'Lukk' : 'Meny';
-}
-menuBtn.addEventListener('click', () => setMenu(!header.classList.contains('open')));
-document.getElementById('nav').addEventListener('click', e => { if (e.target.closest('a')) setMenu(false); });
-addEventListener('keydown', e => { if (e.key === 'Escape' && header.classList.contains('open')) { setMenu(false); menuBtn.focus(); } });
-matchMedia('(min-width: 1024px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
-
-// menu hover: one pale pill that slides to the link under the pointer (or with keyboard focus)
-{
-  const nav = document.getElementById('nav'), pill = document.getElementById('navPill');
-  const links = [...nav.querySelectorAll('a')];
-  let cur = null;
-  const show = a => {
-    if (a === cur) return;
-    const first = !pill.classList.contains('on');
-    pill.classList.toggle('jump', first);              // first hover: appear in place, no slide in from the left
-    pill.style.width = a.offsetWidth + 'px';
-    pill.style.transform = `translate(${a.offsetLeft}px, ${a.offsetTop + (a.offsetHeight - 44) / 2}px)`;
-    if (first) pill.offsetWidth;                       // commit the position before fading in
-    pill.classList.add('on'); pill.classList.remove('jump');
-    links.forEach(l => l.classList.toggle('is-hover', l === a && !l.hasAttribute('aria-current')));
-    cur = a;
-  };
-  const hide = () => { pill.classList.remove('on'); links.forEach(l => l.classList.remove('is-hover')); cur = null; };
-  links.forEach(a => {
-    a.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') show(a); });
-    a.addEventListener('focus', () => { if (a.matches(':focus-visible')) show(a); });
-    a.addEventListener('blur', hide);
-  });
-  nav.addEventListener('pointerleave', hide);
-
-  // selected: the link to the page you are on (the links lead to subpages; '#' = page not built yet)
-  links.forEach(a => {
-    const here = a.getAttribute('href') !== '#' && a.pathname.replace(/\/$/, '') === location.pathname.replace(/\/$/, '');
-    if (here) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
-  });
-}
 
 function frame() {
   requestAnimationFrame(frame);
