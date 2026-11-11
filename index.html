@@ -63,12 +63,14 @@
   /* no background: the header always sits on top, and whatever scrolls past goes behind it */
   .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light)); background: none; }
   /* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
-  .site-header.on-yellow { --hdr: var(--brown) !important; --hdr-bg: var(--yellow) !important; --grid: #F2C930; }
-  .site-header.on-yellow #logoDark, .site-header.on-yellow #logoPink { opacity: 0 !important; }
-  .site-header.on-yellow #logoBrown { opacity: 1 !important; }
-  .site-header.on-yellow .nav-pill { background: rgb(255 255 255 / .65); }
-  .site-header.on-yellow .nav a[aria-current] { color: var(--yellow); }
-  @media (max-width: 1023px) { .site-header.on-yellow .nav a:hover, .site-header.on-yellow .nav a:focus-visible { background: rgb(255 255 255 / .65); } }
+  /* --hdr-y and --logo-y follow the brown → yellow fade (set on scroll, like the green → brown one in the hero) */
+  .site-header.on-yellow { --hdr: var(--hdr-y) !important; --hdr-bg: var(--sec-y) !important; }
+  .site-header.on-yellow #logoDark { opacity: 0 !important; }
+  .site-header.on-yellow #logoPink { opacity: calc(1 - var(--logo-y)) !important; }
+  .site-header.on-yellow #logoBrown { opacity: var(--logo-y) !important; }
+  .site-header.is-yellow .nav-pill { background: rgb(255 255 255 / .65); }
+  .site-header.is-yellow .nav a[aria-current] { color: var(--yellow); }
+  @media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: rgb(255 255 255 / .65); } }
   .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
@@ -168,7 +170,7 @@
      from the space that is left, so the whole carousel always fits the viewport. */
   .shop { position: relative; z-index: 1; color: var(--pink-light); --grid: #31160F; --bg: var(--brown);
           background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--brown);
+                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--brown));
           min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
           padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(12px, 2.5vh, 32px);
           overflow: clip; isolation: isolate; }
@@ -280,7 +282,7 @@
      stacked under 1024 px. The bags sit at the bottom of the card and are cut off by it, as in the sketch. */
   .abo { position: relative; z-index: 1; color: var(--brown); --grid: #F2C930; --bg: var(--yellow);
          background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                     linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--yellow);
+                     linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--yellow));
          padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(32px, 6vh, 64px);
          overflow: clip; isolation: isolate; }
   @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: clamp(12px, 2.5vh, 32px); } }
@@ -1293,10 +1295,22 @@ function measureAbo() {
   snapHole(document.getElementById('holeAbo'), contentRect(aboHead), ar.left, ar.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
 }
 
-// header turns yellow while the section is under it
+// Background fades brown → yellow on scroll, the same way the hero fades green → brown: one colour for
+// the shop and the subscription section (and their grid lines and the cells behind the titles), eased in and out.
+// It runs while the top of the section moves from the bottom of the screen to 40 % down; the header text,
+// logo and menu go from pink to brown with it.
+const YELLOW = [255, 212, 51];
 function aboHeader() {
-  const r = abo.getBoundingClientRect(), y = header.offsetHeight / 2;
-  header.classList.toggle('on-yellow', r.top <= y && r.bottom > y);
+  const r = abo.getBoundingClientRect(), H = innerHeight;
+  const e = E.io(clamp((H - r.top) / (H * .6)));
+  const sec = rgb(mix(BROWN, YELLOW, e)), grid = rgb(mix([49, 22, 15], [242, 201, 48], e));
+  for (const el of [shop, abo]) { el.style.setProperty('--sec', sec); el.style.setProperty('--grid', grid); el.style.setProperty('--bg', sec); }
+  header.style.setProperty('--hdr-y', rgb(mix(PINK, BROWN, e)));
+  header.style.setProperty('--sec-y', sec);
+  header.style.setProperty('--logo-y', e.toFixed(3));
+  const past = r.bottom <= header.offsetHeight / 2;                  // below the section the hero colours take over again
+  header.classList.toggle('on-yellow', e > 0 && !past);
+  header.classList.toggle('is-yellow', e > .5 && !past);
 }
 addEventListener('scroll', aboHeader, { passive: true });
 
