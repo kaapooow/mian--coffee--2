@@ -9,19 +9,61 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500;600&display=swap" rel="stylesheet">
 <link href="https://api.fontshare.com/v2/css?f[]=clash-display@400,700&display=swap" rel="stylesheet">
 <style>
+  /* ================================================================ colour tokens
+     Two layers. 1) Palette: every colour on the site, once, named by hue and step (950 darkest).
+     Only the semantic tokens use these. 2) Semantic: what a colour is for. Components use only these.
+     The scroll fades (green → brown in the hero, brown → yellow before the subscription) read the same
+     tokens in JS, and set the live context tokens --bg, --grid, --hdr and --hdr-bg as they go. */
   :root {
-    --green: #2A4B2F;          /* hero background (dark green, from the sketch) */
-    --green-light: #81E390;    /* hero headline, logo and menu on the dark green */
-    --brown: #2C0F07;
-    --ink: #2C0F07;
-    --pink: #F67DFF;
-    --pink-light: #FCCDFF;
-    --btn-dark: #231906;
+    /* 1. palette */
+    --white:      #FFFFFF;
+    --black:      #000000;
+    --box-white:  #FCFCFC;
+    --stone-300:  #DBD6D5;
+    --green-900:  #2A4B2F;
+    --green-800:  #315737;
+    --green-700:  #2F6B2A;
+    --green-300:  #81E390;
+    --brown-950:  #1A0904;
+    --brown-900:  #230C06;
+    --brown-800:  #2C0F07;
+    --brown-700:  #31160F;
+    --olive-950:  #231906;
+    --pink-500:   #F67DFF;
+    --pink-200:   #FCCDFF;
+    --yellow-500: #F2C930;
+    --yellow-400: #FFD433;
+
+    /* 2. semantic: section backgrounds and their grid lines */
+    --surface-green:  var(--green-900);     /* hero */
+    --surface-brown:  var(--brown-800);     /* last hero frame, marquee, shop */
+    --surface-yellow: var(--yellow-400);    /* subscription */
+    --surface-card:   var(--white);
+    --line-green:     var(--green-800);
+    --line-brown:     var(--brown-700);
+    --line-yellow:    var(--yellow-500);
+    --marquee-front:  var(--brown-900);
+    --marquee-back:   var(--brown-950);
+    /* text and icons, by what they sit on */
+    --fg-on-green:    var(--green-300);     /* headline, logo, menu */
+    --fg-on-brown:    var(--pink-200);
+    --fg-on-light:    var(--brown-800);     /* on cards, white buttons and yellow */
+    --fg-inverse:     var(--white);         /* on dark buttons */
+    --accent:         var(--pink-500);      /* menu on brown, focus rings, active dot */
+    /* controls */
+    --btn-dark:       var(--olive-950);
+    --btn-light:      var(--white);
+    --btn-success:    var(--green-700);
+    --btn-hero:       var(--black);         /* the black CTA in the hero box */
+    --card-box:       var(--box-white);     /* the light boxes behind text on the cards */
+    --pill-on-yellow: color-mix(in srgb, var(--white) 65%, transparent);
+    --shadow:         color-mix(in srgb, var(--black) 25%, transparent);
+    --tag-bg:         var(--stone-300);
+
     --display: 'Clash Display', 'Arial Black', sans-serif;
     --text: 'IBM Plex Sans', system-ui, sans-serif;
 
     /* layout: one content width for the whole site, gutters grow with the screen */
-    --yellow: #FFD433;    /* subscription section (Figma 409:14246) */
     --max: 1280px;        /* max content width, the container is this + gutters */
     --gutter: 20px;       /* < 640 px: mobile */
     --header-h: 64px;
@@ -30,8 +72,8 @@
   @media (min-width: 1024px) { :root { --gutter: 48px; --header-h: 80px; } }     /* desktop */
   @media (min-width: 1440px) { :root { --gutter: 64px; } }                       /* wide, content stops at --max */
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: var(--green); }
-  body { color: var(--ink); font-family: var(--text); -webkit-font-smoothing: antialiased; }
+  html, body { background: var(--surface-green); }
+  body { color: var(--fg-on-light); font-family: var(--text); -webkit-font-smoothing: antialiased; }
   a { color: inherit; text-decoration: none; }
 
   /* the animation runs over 640vh of scrolling (as before); the last frame then holds for a short moment
@@ -46,8 +88,8 @@
   .stage--front { z-index: 3; }
   /* Grid on every section. Cells are as square as possible with a whole number of cells across the
      viewport's width and height (about 112 px on a 1528 px wide screen); JS sets --gx and --gy.
-     --grid is the line colour: #315737 on the green hero, #31160F on brown. --bg is the current page colour. */
-  :root { --gx: 112px; --gy: 112px; --grid: #315737; --bg: var(--green); }
+     --grid is the line colour: --line-green on the green hero, --line-brown on brown. --bg is the current page colour. */
+  :root { --gx: 112px; --gy: 112px; --grid: var(--line-green); --bg: var(--surface-green); }
   .gridlines { background-image: linear-gradient(90deg, var(--grid) 1px, transparent 1px), linear-gradient(180deg, var(--grid) 1px, transparent 1px);
                background-size: var(--gx) var(--gy); }
   .hgrid { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
@@ -63,19 +105,19 @@
 
   /* header: fixed to the top of the window, outside the animated stage */
   .skip { position: absolute; left: var(--gutter); top: -100px; z-index: 60; padding: 10px 16px; border-radius: 8px;
-          background: var(--btn-dark); color: #fff; font-weight: 600; }
+          background: var(--btn-dark); color: var(--fg-inverse); font-weight: 600; }
   .skip:focus { top: 12px; }
   /* no background: the header always sits on top, and whatever scrolls past goes behind it */
-  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--green-light)); background: none; }
+  .site-header { position: fixed; inset: 0 0 auto; z-index: 40; color: var(--hdr, var(--fg-on-green)); background: none; }
   /* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
   /* --hdr-y and --logo-y follow the brown → yellow fade (set on scroll, like the green → brown one in the hero) */
   .site-header.on-yellow { --hdr: var(--hdr-y) !important; --hdr-bg: var(--sec-y) !important; }
   .site-header.on-yellow #logoDark { opacity: 0 !important; }
   .site-header.on-yellow #logoPink { opacity: calc(1 - var(--logo-y)) !important; }
   .site-header.on-yellow #logoBrown { opacity: var(--logo-y) !important; }
-  .site-header.is-yellow .nav-pill { background: rgb(255 255 255 / .65); }
-  .site-header.is-yellow .nav a[aria-current] { color: var(--yellow); }
-  @media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: rgb(255 255 255 / .65); } }
+  .site-header.is-yellow .nav-pill { background: var(--pill-on-yellow); }
+  .site-header.is-yellow .nav a[aria-current] { color: var(--surface-yellow); }
+  @media (max-width: 1023px) { .site-header.is-yellow .nav a:hover, .site-header.is-yellow .nav a:focus-visible { background: var(--pill-on-yellow); } }
   .header-inner { height: var(--header-h); padding-inline: var(--pad); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
@@ -86,11 +128,11 @@
   .nav { position: relative; display: flex; align-items: center; gap: 4px; font-weight: 500; font-size: 16px; }
   .nav a { position: relative; z-index: 1; display: inline-flex; align-items: center; min-height: 44px; padding: 10px 18px;
            border-radius: 9999px; line-height: 1; transition: color .25s ease, background-color .25s ease; }
-  .nav a.is-hover { color: var(--brown); }
-  .nav a[aria-current] { background: var(--hdr, var(--green-light)); color: var(--brown); }
-  .nav a:focus-visible { outline: 2px solid var(--hdr, var(--green-light)); outline-offset: 3px; }
+  .nav a.is-hover { color: var(--fg-on-light); }
+  .nav a[aria-current] { background: var(--hdr, var(--fg-on-green)); color: var(--fg-on-light); }
+  .nav a:focus-visible { outline: 2px solid var(--hdr, var(--fg-on-green)); outline-offset: 3px; }
   .nav-pill { position: absolute; top: 0; left: 0; height: 44px; border-radius: 9999px; pointer-events: none; opacity: 0;
-              background: color-mix(in srgb, var(--hdr, var(--green-light)) 45%, #fff);
+              background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white));
               transition: transform .35s cubic-bezier(.22, 1, .36, 1), width .35s cubic-bezier(.22, 1, .36, 1), opacity .2s ease; }
   .nav-pill.on { opacity: 1; }
   .nav-pill.jump { transition: opacity .2s ease; }
@@ -111,15 +153,15 @@
   @media (max-width: 1023px) {
     .menu-btn { display: inline-flex; }
     .nav { display: none; position: fixed; inset: var(--header-h) 0 auto; flex-direction: column; gap: 0;
-           padding: 8px var(--c0, var(--gutter)) 32px; background: var(--hdr-bg, var(--green)); box-shadow: 0 24px 32px -24px rgb(0 0 0 / .25); }
-    .site-header.open { background: var(--hdr-bg, var(--green)); }
+           padding: 8px var(--c0, var(--gutter)) 32px; background: var(--hdr-bg, var(--surface-green)); box-shadow: 0 24px 32px -24px var(--shadow); }
+    .site-header.open { background: var(--hdr-bg, var(--surface-green)); }
     .site-header.open .nav { display: flex; }
     .nav { align-items: stretch; gap: 4px; padding-top: 12px; }
     .nav a { font-family: var(--display); font-weight: 400; font-size: 28px; line-height: 1.2; min-height: 56px;
              padding: 12px 16px; border-radius: 16px; justify-content: space-between; }
     .nav a::after { content: "→"; font-family: var(--text); font-size: 20px; opacity: 0; translate: -8px 0;
                     transition: opacity .25s ease, translate .25s ease; }
-    .nav a:hover, .nav a:focus-visible { background: color-mix(in srgb, var(--hdr, var(--green-light)) 45%, #fff); color: var(--brown); }
+    .nav a:hover, .nav a:focus-visible { background: color-mix(in srgb, var(--hdr, var(--fg-on-green)) 45%, var(--white)); color: var(--fg-on-light); }
     .nav a:hover::after, .nav a:focus-visible::after, .nav a[aria-current]::after { opacity: 1; translate: 0 0; }
     .nav-pill { display: none; }
   }
@@ -130,8 +172,8 @@
   @media (min-width: 1024px) { .btn { padding: 12px 24px; font-size: 18px; } }
   .btn:hover { transform: translateY(-1px); }
   .btn img { width: 24px; height: 24px; display: block; }
-  .btn--dark { background: var(--btn-dark); color: #fff; }
-  .btn--white { background: #fff; color: #000; }
+  .btn--dark { background: var(--btn-dark); color: var(--fg-inverse); }
+  .btn--white { background: var(--btn-light); color: var(--fg-on-light); }
 
   /* copy: normal HTML on the same container as the header.
      Mobile first: text at the top under the header, the 3D scene below it. */
@@ -141,11 +183,11 @@
                    display: flex; flex-direction: column; align-items: flex-start; }
   .intro a, .outro a { pointer-events: auto; }
   .intro h1, .outro h2 { font-family: var(--display); font-weight: 700; letter-spacing: 0; line-height: 1; text-wrap: balance; }
-  .intro h1 { font-size: clamp(40px, 11vw, 88px); color: var(--green-light); }
-  .intro p { margin-top: 16px; max-width: 22em; color: #fff; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; }   /* 25% under the sketch */
-  .intro .btn--dark { background: #000; }
+  .intro h1 { font-size: clamp(40px, 11vw, 88px); color: var(--fg-on-green); }
+  .intro p { margin-top: 16px; max-width: 22em; color: var(--fg-inverse); font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; }   /* 25% under the sketch */
+  .intro .btn--dark { background: var(--btn-hero); }
   .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
-  .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--pink-light); }
+  .outro h2 { font-size: clamp(40px, 12vw, 96px); line-height: .95; color: var(--fg-on-brown); }
   .outro h2 > span { display: block; white-space: nowrap; }   /* the two lines, not the letters inside them */
   .baseline { display: inline-block; width: 0; height: 0; vertical-align: baseline; }   /* marks where the last word sits */
   .outro { opacity: 0; visibility: hidden; }
@@ -171,17 +213,17 @@
   .bean { z-index: 7; }
 
   /* ================================================================ marquee between the last hero frame and the shop
-     Two tilted bands that cross, running opposite ways. They keep running on their own and turn around when
-     the scroll direction turns. Front band: 20 % black over the brown, back band: 40 % black and dimmer text. */
-  .marquee { position: relative; z-index: 2; height: calc(var(--gy) * 2); overflow: clip; overflow-clip-margin: 40px;
+     Two bands that cross, the front one tilted 5°, the back one -5°, running opposite ways. They keep running on their own and turn around when
+     the scroll direction turns. Solid colours: --marquee-front and --marquee-back (darker, and dimmer text). */
+  .marquee { position: relative; z-index: 2; height: calc(var(--gy) * 3); overflow-x: clip;
              background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                         linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--brown);
-             color: var(--pink-light); pointer-events: none; user-select: none; }
+                         linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--surface-brown);
+             color: var(--fg-on-brown); pointer-events: none; user-select: none; }
   @media (min-width: 1024px) { .marquee { margin-top: -60px; } }
   .mq-band { position: absolute; left: -10vw; width: 120vw; top: 50%; overflow: hidden; white-space: nowrap;
              padding-block: clamp(10px, 1.4vw, 20px); }
-  .mq-band--back  { background: rgb(0 0 0 / .4); transform: translateY(-78%) rotate(2.4deg); }
-  .mq-band--front { background: rgb(0 0 0 / .2); transform: translateY(-22%) rotate(-2.4deg); }
+  .mq-band--back  { background: var(--marquee-back); transform: translateY(-62%) rotate(-5deg); }
+  .mq-band--front { background: var(--marquee-front); transform: translateY(-38%) rotate(5deg); }
   .mq-band--back .mq-track { opacity: .45; }
   .mq-track { display: inline-flex; will-change: transform; }
   .mq-set { display: inline-flex; flex-shrink: 0; align-items: center; font-family: var(--display); font-weight: 500;
@@ -193,9 +235,9 @@
   /* ================================================================ shop: product card carousel */
   /* One screen tall, starts under the fixed header. Card and image size are worked out in JS
      from the space that is left, so the whole carousel always fits the viewport. */
-  .shop { position: relative; z-index: 1; color: var(--pink-light); --grid: #31160F; --bg: var(--brown);
+  .shop { position: relative; z-index: 1; color: var(--fg-on-brown); --grid: var(--line-brown); --bg: var(--surface-brown);
           background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--brown));
+                      linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--surface-brown));
           min-height: 100vh; min-height: 100svh; display: flex; flex-direction: column;
           padding-top: var(--header-h); padding-bottom: 0;
           overflow: clip; isolation: isolate; }
@@ -207,7 +249,7 @@
   .shop-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
 
   .carousel { position: relative; display: flex; flex-direction: column; outline: none; touch-action: pan-y; }
-  .carousel:focus-visible { outline: 2px solid var(--pink); outline-offset: -4px; }
+  .carousel:focus-visible { outline: 2px solid var(--accent); outline-offset: -4px; }
   .c-stage { position: relative; height: var(--stage-h, 600px); }
 
   /* slide = position in the carousel; card = the product card itself */
@@ -215,7 +257,7 @@
            transition: transform .8s cubic-bezier(.22, .8, .2, 1), opacity .6s ease; will-change: transform; }
   .slide-inner { transition: transform 1s cubic-bezier(.2, .8, .2, 1), opacity .8s ease; transition-delay: var(--build-delay, 0ms); }
   .slide-hit { position: absolute; inset: 0; z-index: 3; border: 0; background: none; border-radius: 16px; cursor: pointer; }
-  .slide-hit:focus-visible { outline: 3px solid var(--pink); outline-offset: 6px; }
+  .slide-hit:focus-visible { outline: 3px solid var(--accent); outline-offset: 6px; }
   .slide.is-active .slide-hit { display: none; }
 
   /* The card is a grid of square cells (about 50 px in the sketch). Cell size follows the card width,
@@ -224,33 +266,33 @@
      JS sets --cols, --rows, --sx (cell size) and the grid areas (--g-*). */
   .card { position: relative; display: grid; width: var(--card-w); height: calc(var(--rows, 14) * var(--sy, var(--sx, 50.4px)));
           grid-template-columns: repeat(var(--cols, 10), 1fr); grid-template-rows: repeat(var(--rows, 14), 1fr);
-          border-radius: 16px; color: var(--brown); box-shadow: inset 0 0 0 6px var(--brown);
-          --grid-line: rgb(44 15 7 / .09);
+          border-radius: 16px; color: var(--fg-on-light); box-shadow: inset 0 0 0 6px var(--fg-on-light);
+          --grid-line: color-mix(in srgb, var(--fg-on-light) 9%, transparent);
           background:
             linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sy, 50.4px),
             linear-gradient(180deg, var(--grid-line) 1px, transparent 1px) 0 0 / var(--sx, 50.4px) var(--sy, 50.4px),
-            linear-gradient(180deg, rgb(44 15 7 / .06), rgb(44 15 7 / 0)), #fff; }
+            linear-gradient(180deg, color-mix(in srgb, var(--fg-on-light) 6%, transparent), transparent), var(--surface-card); }
   /* cards on the sides sit back: darker at the top and faded, as in the sketch */
   .card::after { content: ""; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; opacity: 0; z-index: 2;
-                 background: linear-gradient(180deg, rgb(44 15 7 / .32), rgb(44 15 7 / 0)); transition: opacity .6s ease; }
+                 background: linear-gradient(180deg, color-mix(in srgb, var(--fg-on-light) 32%, transparent), transparent); transition: opacity .6s ease; }
   .slide:not(.is-active) .card::after { opacity: 1; }
 
   .card-top { grid-area: var(--g-top); display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tag { display: inline-flex; align-items: center; padding: 3px 9px 3px 10px; border-radius: 9999px; border: 1px solid var(--brown);
-         background: #dbd6d5; font-weight: 500; font-size: var(--tag-fs, 12px); line-height: 18px; letter-spacing: .01em; white-space: nowrap; }
+  .tag { display: inline-flex; align-items: center; padding: 3px 9px 3px 10px; border-radius: 9999px; border: 1px solid var(--fg-on-light);
+         background: var(--tag-bg); font-weight: 500; font-size: var(--tag-fs, 12px); line-height: 18px; letter-spacing: .01em; white-space: nowrap; }
   .icon-btn { width: 48px; height: 48px; flex-shrink: 0; display: grid; place-items: center; border-radius: 9999px;
-              border: 1px solid var(--brown); background: rgb(44 15 7 / .12); color: var(--brown);
+              border: 1px solid var(--fg-on-light); background: color-mix(in srgb, var(--fg-on-light) 12%, transparent); color: var(--fg-on-light);
               transition: background .2s, color .2s; }
   .icon-btn[hidden] { display: none; }
-  .icon-btn:hover, .icon-btn:focus-visible { background: var(--brown); color: #fff; outline: none; }
+  .icon-btn:hover, .icon-btn:focus-visible { background: var(--fg-on-light); color: var(--fg-inverse); outline: none; }
   .icon-btn svg, .card-btn svg { width: 24px; height: 24px; }
 
   .card-img { grid-area: var(--g-img); min-height: 0; display: flex; align-items: center; justify-content: center; padding-bottom: 7px; }
   .card-img img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; user-select: none; -webkit-user-drag: none; }
 
   /* light boxes that fill whole cells; 1 px in from the cell's top and left so the grid lines stay visible */
-  .card-text, .card-price { margin: 1px 0 0 1px; background: #fcfcfc; min-width: 0; overflow: hidden; text-align: center; }
+  .card-text, .card-price { margin: 1px 0 0 1px; background: var(--card-box); min-width: 0; overflow: hidden; text-align: center; }
   .card-text { grid-area: var(--g-text); display: flex; flex-direction: column; align-items: center; justify-content: center;
                gap: 4px; padding: var(--box-pad, 12px) 8px; }
   .card-text > * { flex-shrink: 0; }
@@ -262,25 +304,25 @@
 
   .card-btn { grid-area: var(--g-btn); align-self: center; justify-self: center; z-index: 1; margin-bottom: calc(var(--sx, 50px) * .25);
               display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 24px;
-              border: 0; border-radius: 48px; background: #231906; color: #fff; cursor: pointer; white-space: nowrap;
+              border: 0; border-radius: 48px; background: var(--btn-dark); color: var(--fg-inverse); cursor: pointer; white-space: nowrap;
               font: 600 var(--btn-fs, 18px)/1 var(--text); transition: transform .15s ease, background .2s; }
   .card-btn:hover { transform: translateY(-1px); }
-  .card-btn:focus-visible { outline: 3px solid var(--pink); outline-offset: 3px; }
-  .card-btn:disabled { background: rgb(44 15 7 / .14); color: rgb(44 15 7 / .55); cursor: not-allowed; transform: none; }
-  .card-btn.is-added { background: #2f6b2a; }
+  .card-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .card-btn:disabled { background: color-mix(in srgb, var(--fg-on-light) 14%, transparent); color: color-mix(in srgb, var(--fg-on-light) 55%, transparent); cursor: not-allowed; transform: none; }
+  .card-btn.is-added { background: var(--btn-success); }
 
   /* pagination: prev, one dot per product, next */
   .c-controls { position: relative; z-index: 12; display: flex; align-items: center; justify-content: center; gap: 12px; height: var(--gy); }
   .c-arrow { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer;
-             background: var(--brown); color: var(--pink-light); border: 1.5px solid rgb(252 205 255 / .4); transition: background .2s, color .2s; }
-  .c-arrow:hover, .c-arrow:focus-visible { background: var(--pink-light); color: var(--brown); outline: none; }
+             background: var(--surface-brown); color: var(--fg-on-brown); border: 1.5px solid color-mix(in srgb, var(--fg-on-brown) 40%, transparent); transition: background .2s, color .2s; }
+  .c-arrow:hover, .c-arrow:focus-visible { background: var(--fg-on-brown); color: var(--fg-on-light); outline: none; }
   .c-arrow svg { width: 20px; height: 20px; }
   .dots { display: flex; align-items: center; gap: 2px; }
   .dot { width: 24px; height: 44px; display: grid; place-items: center; border: 0; background: none; cursor: pointer; }
-  .dot::before { content: ""; width: 8px; height: 8px; border-radius: 8px; background: rgb(252 205 255 / .35); transition: width .35s ease, background .35s ease; }
+  .dot::before { content: ""; width: 8px; height: 8px; border-radius: 8px; background: color-mix(in srgb, var(--fg-on-brown) 35%, transparent); transition: width .35s ease, background .35s ease; }
   .dot[aria-current="true"] { width: 36px; }
-  .dot[aria-current="true"]::before { width: 28px; background: var(--pink); }
-  .dot:focus-visible { outline: 2px solid var(--pink); outline-offset: -8px; border-radius: 12px; }
+  .dot[aria-current="true"]::before { width: 28px; background: var(--accent); }
+  .dot:focus-visible { outline: 2px solid var(--accent); outline-offset: -8px; border-radius: 12px; }
   @media (max-width: 420px) { .dot { width: 18px; } .dot[aria-current="true"] { width: 30px; } .dot[aria-current="true"]::before { width: 22px; } }
 
   /* phones on their side: the image moves to the left half of the grid, text and button to the right */
@@ -306,9 +348,9 @@
   /* ================================================================ subscription
      Same card as the shop (square cells, light boxes, tag, button), three side by side on desktop,
      stacked under 1024 px. The bags sit at the bottom of the card and are cut off by it, as in the sketch. */
-  .abo { position: relative; z-index: 1; color: var(--brown); --grid: #F2C930; --bg: var(--yellow);
+  .abo { position: relative; z-index: 1; color: var(--fg-on-light); --grid: var(--line-yellow); --bg: var(--surface-yellow);
          background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
-                     linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--yellow));
+                     linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--sec, var(--surface-yellow));
          padding-top: var(--header-h); padding-bottom: var(--gy);
          overflow: clip; isolation: isolate; }
   @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: 0; } }
@@ -318,14 +360,14 @@
   .abo-cards { column-gap: var(--abo-gap, 16px); row-gap: var(--abo-row-gap, 16px); padding-bottom: var(--abo-over, 0px); }
   .abo .card { box-shadow: none; }                                      /* no frame on these cards */
   .abo .card-top { justify-content: center; }
-  .abo .card-btn:focus-visible { outline-color: var(--brown); }
+  .abo .card-btn:focus-visible { outline-color: var(--fg-on-light); }
   /* the bag stack hangs out of the bottom of the card: 27 % of it below the card's edge, as in the sketch.
      It scales down (around that edge) when the screen is too low for full size. */
   .abo-img { position: absolute; left: 0; width: var(--card-w); z-index: 1; pointer-events: none;
              height: calc(var(--card-w) * var(--stack-h)); bottom: calc(var(--card-w) * var(--stack-h) * -.27);
              transform: scale(var(--bag-s, 1)); transform-origin: 50% 73%; }
   .abo-img img { position: absolute; display: block; height: auto; user-select: none; -webkit-user-drag: none;
-                 filter: drop-shadow(0 6px 10px rgb(44 15 7 / .18)); }
+                 filter: drop-shadow(0 6px 10px color-mix(in srgb, var(--fg-on-light) 18%, transparent)); }
   /* build-in: the cards rise one after the other, left to right, then their bags slide up into them */
   .abo:not(.is-built) .abo-head h2 { opacity: 0; }
   .abo .card { transition: transform 1s cubic-bezier(.2, .8, .2, 1), opacity .8s ease; transition-delay: var(--d, 0ms); }
@@ -358,7 +400,7 @@
     .slide, .slide-inner, .shop-head h2, .c-controls, .card::after, .dot::before { transition-duration: .01s !important; transition-delay: 0s !important; }
   }
 
-  .loader { position: fixed; left: 16px; bottom: 14px; color: var(--green-light); font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
+  .loader { position: fixed; left: 16px; bottom: 14px; color: var(--fg-on-green); font: 500 12px/1.4 var(--text); opacity: .55; z-index: 30; }
   .end { height: 0; }
   @media (prefers-reduced-motion: reduce) { .btn, .menu-btn .bars, .menu-btn .bars::before, .menu-btn .bars::after { transition: none; } }
 </style>
@@ -397,7 +439,7 @@
     <div class="hgrid gridlines" aria-hidden="true"><div class="hole" id="holeIntro"></div><div class="hole" id="holeOutro"></div></div>
     <div class="stage stage--back" id="stageBack" aria-hidden="true">
       <svg class="swirl" viewBox="0 0 1407 585" fill="none" aria-hidden="true">
-        <path id="swirlPath" opacity="0.3" pathLength="1" d="M75 509.888C75 379.14 283.255 114.601 426.072 110.87C565.77 107.221 347.774 403.624 485.344 409.226C493.493 409.558 505.838 401.152 547.058 361.293C635.741 275.541 733.004 120.065 852.836 75.7054C892.347 61.0792 830.084 279.722 831.507 289.859C833.314 302.736 1274.99 95.8296 1331.66 81.9665" stroke-width="150" stroke-linecap="round" stroke-linejoin="bevel" stroke="#F67DFF" stroke-dasharray="1 1" stroke-dashoffset="1"/>
+        <path id="swirlPath" opacity="0.3" pathLength="1" d="M75 509.888C75 379.14 283.255 114.601 426.072 110.87C565.77 107.221 347.774 403.624 485.344 409.226C493.493 409.558 505.838 401.152 547.058 361.293C635.741 275.541 733.004 120.065 852.836 75.7054C892.347 61.0792 830.084 279.722 831.507 289.859C833.314 302.736 1274.99 95.8296 1331.66 81.9665" stroke-width="150" stroke-linecap="round" stroke-linejoin="bevel" style="stroke: var(--accent)" stroke-dasharray="1 1" stroke-dashoffset="1"/>
       </svg>
     </div>
 
@@ -619,7 +661,11 @@ const outro = document.getElementById('outro'), outroH = document.getElementById
 const header = document.getElementById('header');
 const logoDark = document.getElementById('logoDark'), logoPink = document.getElementById('logoPink');
 const swirl = document.getElementById('swirlPath');
-const GREEN = [42, 75, 47], BROWN = [44, 15, 7], INK = [129, 227, 144], PINK = [246, 125, 255];   // INK: light green header text on the dark green
+// colours for the scroll fades, read from the CSS palette tokens (hex) so there is one source
+const TOKENS = getComputedStyle(document.documentElement);
+const tok = name => { const h = TOKENS.getPropertyValue(name).trim().replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+const GREEN = tok('--green-900'), BROWN = tok('--brown-800'), INK = tok('--green-300'), PINK = tok('--pink-500');   // INK: header text on the green
+const LINE_GREEN = tok('--green-800'), LINE_BROWN = tok('--brown-700'), YELLOW = tok('--yellow-400'), LINE_YELLOW = tok('--yellow-500');
 
 // ---------------------------------------------------------------- layout
 // Wide screens show the whole stage, fitted and centred, with the copy in a left column.
@@ -828,7 +874,7 @@ function frame() {
   const bg = rgb(mix(GREEN, BROWN, E.io(dark)));
   document.documentElement.style.background = bg; document.body.style.background = bg;
   root.style.setProperty('--bg', bg);
-  root.style.setProperty('--grid', rgb(mix([49, 87, 55], [49, 22, 15], E.io(dark))));   // #315737 on green → #31160F on brown
+  root.style.setProperty('--grid', rgb(mix(LINE_GREEN, LINE_BROWN, E.io(dark))));
   header.style.setProperty('--hdr', rgb(mix(INK, PINK, E.io(dark))));
   header.style.setProperty('--hdr-bg', bg);
   logoPink.style.opacity = E.io(dark); logoDark.style.opacity = 1 - E.io(dark);
@@ -1364,11 +1410,10 @@ function measureAbo() {
 // the shop and the subscription section (and their grid lines and the cells behind the titles), eased in and out.
 // It runs while the top of the section moves from the bottom of the screen to 40 % down; the header text,
 // logo and menu go from pink to brown with it.
-const YELLOW = [255, 212, 51];
 function aboHeader() {
   const r = abo.getBoundingClientRect(), H = innerHeight;
   const e = E.io(clamp((H - r.top) / (H * .6)));
-  const sec = rgb(mix(BROWN, YELLOW, e)), grid = rgb(mix([49, 22, 15], [242, 201, 48], e));
+  const sec = rgb(mix(BROWN, YELLOW, e)), grid = rgb(mix(LINE_BROWN, LINE_YELLOW, e));
   for (const el of [shop, abo]) { el.style.setProperty('--sec', sec); el.style.setProperty('--grid', grid); el.style.setProperty('--bg', sec); }
   header.style.setProperty('--hdr-y', rgb(mix(PINK, BROWN, e)));
   header.style.setProperty('--sec-y', sec);
