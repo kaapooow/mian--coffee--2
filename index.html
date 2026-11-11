@@ -21,6 +21,7 @@
     --text: 'IBM Plex Sans', system-ui, sans-serif;
 
     /* layout: one content width for the whole site, gutters grow with the screen */
+    --yellow: #FFD433;    /* subscription section (Figma 409:14246) */
     --max: 1280px;        /* max content width, the container is this + gutters */
     --gutter: 20px;       /* < 640 px: mobile */
     --header-h: 64px;
@@ -64,6 +65,13 @@
                  background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                              linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                              var(--hdr-bg, var(--green)); }
+  /* over the subscription section: yellow bar, brown text and logo (the class is set on scroll) */
+  .site-header.on-yellow { --hdr: var(--brown) !important; --hdr-bg: var(--yellow) !important; --grid: #F2C930; }
+  .site-header.on-yellow #logoDark, .site-header.on-yellow #logoPink { opacity: 0 !important; }
+  .site-header.on-yellow #logoBrown { opacity: 1 !important; }
+  .site-header.on-yellow .nav-pill { background: rgb(255 255 255 / .65); }
+  .site-header.on-yellow .nav a[aria-current] { color: var(--yellow); }
+  @media (max-width: 1023px) { .site-header.on-yellow .nav a:hover, .site-header.on-yellow .nav a:focus-visible { background: rgb(255 255 255 / .65); } }
   .header-inner { height: var(--header-h); display: flex; align-items: center; justify-content: space-between; gap: 24px; }
   .logo { display: flex; align-items: center; gap: 8px; height: 32px; flex-shrink: 0; }
   .logo .mark { position: relative; width: 40px; height: 32px; }
@@ -270,6 +278,36 @@
   .bean-p img { display: block; width: 100%; animation: float var(--dur, 7s) ease-in-out infinite alternate; animation-delay: var(--del, 0s); }
   @keyframes float { from { translate: 0 calc(var(--fy, 8px) * -1); } to { translate: 0 var(--fy, 10px); } }
 
+  /* ================================================================ subscription
+     Same card as the shop (square cells, light boxes, tag, button), three side by side on desktop,
+     stacked under 1024 px. The bags sit at the bottom of the card and are cut off by it, as in the sketch. */
+  .abo { position: relative; z-index: 1; color: var(--brown); --grid: #F2C930; --bg: var(--yellow);
+         background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                     linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--yellow);
+         padding-top: calc(var(--header-h) + clamp(12px, 3vh, 40px)); padding-bottom: clamp(32px, 6vh, 64px);
+         overflow: clip; isolation: isolate; }
+  @media (min-width: 1024px) { .abo { min-height: 100vh; min-height: 100svh; padding-bottom: clamp(12px, 2.5vh, 32px); } }
+  .abo-head { position: relative; z-index: 2; }
+  .abo-head h2 { font-family: var(--display); font-weight: 700; font-size: clamp(36px, min(7vw, 8.5vh), 80px); line-height: 1; text-wrap: balance; }
+  .abo-head p { margin-top: 16px; max-width: 46em; font-weight: 500; font-size: clamp(15px, 1.2vw + 7.5px, 18px); line-height: 1.5; text-wrap: pretty; }
+  .abo-cards { position: relative; z-index: 2; display: flex; flex-wrap: wrap; justify-content: center; gap: var(--abo-gap, 16px);
+               margin-top: clamp(16px, 3vh, 40px); }
+  .abo .card { overflow: hidden; box-shadow: none; }
+  .abo .card::before { content: ""; position: absolute; inset: 0; z-index: 3; border-radius: 16px; pointer-events: none;
+                       box-shadow: inset 0 0 0 6px var(--brown); }     /* border on top of the bags */
+  .abo .card-top { justify-content: center; }
+  .abo .card-btn:focus-visible { outline-color: var(--brown); }
+  .abo-img { grid-area: var(--g-img); position: relative; margin-inline: calc(var(--sx) * -1); }
+  .abo-img img { position: absolute; display: block; height: auto; user-select: none; -webkit-user-drag: none;
+                 filter: drop-shadow(0 6px 10px rgb(44 15 7 / .18)); }
+  /* build-in: the cards rise one after the other, left to right, then their bags slide up into them */
+  .abo:not(.is-built) .abo-head h2 { opacity: 0; }
+  .abo .card { transition: transform 1s cubic-bezier(.2, .8, .2, 1), opacity .8s ease; transition-delay: var(--d, 0ms); }
+  .abo:not(.is-built) .card { opacity: 0; transform: translateY(90px); }
+  .abo-img img { transition: translate .9s cubic-bezier(.3, 1.28, .55, 1); transition-delay: var(--d, 0ms); }
+  .abo:not(.is-built) .abo-img img { translate: 0 60%; }
+  @media (prefers-reduced-motion: reduce) { .abo .card, .abo-img img { transition: none; } }
+
   /* build-in the first time the section scrolls into view */
   /* titles fly in letter by letter (see revealTitle) */
   .tw { display: inline-block; white-space: nowrap; }
@@ -311,7 +349,7 @@
 <header class="site-header" id="header">
   <div class="container header-inner">
     <a class="logo" href="#" aria-label="Mian Coffee, til forsiden">
-      <span class="mark"><img src="assets/logo-mark-gronn.svg" alt="" id="logoDark"><img src="assets/logo-mark-rosa.svg" alt="" id="logoPink" style="opacity:0"></span>
+      <span class="mark"><img src="assets/logo-mark-gronn.svg" alt="" id="logoDark"><img src="assets/logo-mark-rosa.svg" alt="" id="logoPink" style="opacity:0"><img src="assets/logo-mark.svg" alt="" id="logoBrown" style="opacity:0"></span>
       <span>Mian Coffee</span>
     </a>
     <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="nav">
@@ -344,7 +382,7 @@
           <p>God kaffe. Bedre dager. Ferskbrent kaffe og små øyeblikk å glede seg til.</p>
           <div class="actions">
             <a class="btn btn--dark" href="#">Finn din kaffe <img src="assets/ikon-kopp.svg" alt=""></a>
-            <a class="btn btn--white" href="#">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
+            <a class="btn btn--white" href="#abonnement">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
           </div>
         </section>
 
@@ -352,7 +390,7 @@
           <h2 id="outroH"><span>Søt, rund og</span><span>balansert<i class="baseline" id="outroBase" aria-hidden="true"></i></span></h2>
           <div class="actions" id="outroA">
             <a class="btn btn--dark" href="#">Finn din kaffe <img src="assets/ikon-kopp.svg" alt=""></a>
-            <a class="btn btn--white" href="#">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
+            <a class="btn btn--white" href="#abonnement">Abonnement <img src="assets/ikon-kalender.svg" alt=""></a>
           </div>
         </section>
       </div>
@@ -388,6 +426,17 @@
     <p class="visually-hidden" id="cLive" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></p>
   </div>
   <div class="beans beans--front" id="beansFront" aria-hidden="true"></div>
+</section>
+
+<section class="abo" id="abonnement" aria-labelledby="aboTitle">
+  <div class="hole" id="holeAbo" aria-hidden="true"></div>
+  <div class="container">
+    <div class="abo-head">
+      <h2 id="aboTitle">Finn ditt abonnement</h2>
+      <p>God kaffe, hver måned. Velg fra 2 til 10 poser – hele bønner, filtermalt eller en blanding du setter sammen selv.</p>
+    </div>
+    <div class="abo-cards" id="aboCards"><!-- cards are rendered from PLANS in the script --></div>
+  </div>
 </section>
 </main>
 <div class="loader" id="loader">Laster …</div>
@@ -1156,6 +1205,103 @@ addEventListener('resize', () => {
 });
 measure(); parallax();
 document.fonts && document.fonts.ready.then(measure);
+
+// ================================================================ subscription
+// Same card as the shop. Bag stacks are placed as in the sketch, in fractions of the card width
+// (left, top, width), drawn back to front.
+const PLANS = [
+  { bags: 2, price: 299, stack: [[.397, .053, .469], [.18, 0, .541]] },
+  { bags: 4, price: 599, stack: [[.457, .17, .453], [.334, .113, .453], [.21, .057, .453], [.087, 0, .453]] },
+  { bags: 8, price: 1198, stack: [[.308, .048, .493], [.374, .097, .493], [.44, .145, .493], [.506, .194, .493],
+                                  [.029, 0, .493], [.095, .048, .493], [.161, .097, .493], [.227, .145, .493]] },
+];
+const abo = document.getElementById('abonnement'), aboCards = document.getElementById('aboCards'), aboHead = abo.querySelector('.abo-head');
+const aboEls = PLANS.map((p, i) => {
+  const el = document.createElement('article');
+  el.className = 'card';
+  el.setAttribute('aria-label', `${p.bags} poser, ${p.price},- per måned`);
+  el.style.setProperty('--d', i * 140 + 'ms');
+  el.innerHTML = `
+    <div class="card-top"><div class="tags"><span class="tag">Månedlig</span></div></div>
+    <div class="card-text"><h3 class="card-title">${p.bags} poser</h3></div>
+    <p class="card-price"><span>${nok(p.price)}</span><span aria-hidden="true">·</span><span class="unit">per måned</span></p>
+    <button class="card-btn" type="button">Legg i handlekurv ${ICON_BASKET}</button>
+    <div class="abo-img" aria-hidden="true">${p.stack.map(([l, t, w], k) =>
+      `<img src="assets/produkter/tjuvstart-250.webp" alt="" loading="lazy" draggable="false"
+        style="left:calc(var(--card-w) * ${l});top:calc(var(--card-w) * ${t});width:calc(var(--card-w) * ${w});--d:${400 + i * 140 + k * 50}ms">`).join('')}</div>`;
+  const btn = el.querySelector('.card-btn');
+  btn.addEventListener('click', () => {
+    btn.classList.add('is-added'); btn.innerHTML = 'Lagt i handlekurven ✓';
+    setTimeout(() => { btn.classList.remove('is-added'); btn.innerHTML = 'Legg i handlekurv ' + ICON_BASKET; }, 1600);
+  });
+  aboCards.appendChild(el);
+  return el;
+});
+
+// card size: three in a row from 1024 px (the section fits the screen), stacked and up to 440 px wide below.
+// Square cells as in the shop; tag, title, price and button get whole rows, the bags get the rest.
+function measureAbo() {
+  const W = aboCards.clientWidth, H = innerHeight, wide = innerWidth >= 1024;
+  const gap = 16, st = aboCards.style, px = v => v + 'px';
+  const area = (r1, c1, r2, c2) => `${r1} / ${c1} / ${r2} / ${c2}`;
+  const cardW = wide ? (W - 2 * gap) / 3 : Math.min(W, 440);
+  const cols = Math.max(8, Math.round(cardW / 50.4)), sx = cardW / cols, c = Math.min(1, sx / 50.4);
+  st.setProperty('--abo-gap', px(gap));
+  st.setProperty('--cols', cols); st.setProperty('--sx', px(sx)); st.setProperty('--card-w', px(cardW));
+  st.setProperty('--title-fs', px(Math.max(22, 40 * c)));
+  st.setProperty('--desc-fs', px(c < .8 ? 15 : 16));
+  st.setProperty('--tag-fs', px(c < .8 ? 11.5 : 12));
+  st.setProperty('--btn-fs', px(c < .8 ? 16 : 18));
+  st.setProperty('--box-pad', px(Math.max(4, 6 * c)));
+  const rowsFor = h => Math.max(1, Math.ceil((h - 1) / sx));
+  const top = Math.max(2, rowsFor(26 + 24 * c));
+  st.setProperty('--rows', 30);
+  st.setProperty('--g-text', area(top + 1, 2, 'span 2', -2));
+  let T = 1, P = 1;
+  for (const el of aboEls) {
+    const t = el.querySelector('.card-text'), pad = parseFloat(getComputedStyle(t).paddingTop);
+    T = Math.max(T, rowsFor(t.firstElementChild.offsetHeight + 2 * pad));
+    P = Math.max(P, rowsFor(el.querySelector('.card-price').firstElementChild.offsetHeight + 12));
+  }
+  T = Math.max(T, 2);
+  const B = rowsFor(96);
+  // bag rows: what is left of the screen on desktop (4 to 7), 6 when the cards are stacked
+  let imgR = 6;
+  if (wide) {
+    const cs = getComputedStyle(abo);
+    const avail = H - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - aboHead.offsetHeight - parseFloat(getComputedStyle(aboCards).marginTop);
+    imgR = Math.max(4, Math.min(7, Math.floor((avail + .5) / sx) - top - T - P - B));
+  }
+  const R = top + T + P + B + imgR;
+  st.setProperty('--rows', R);
+  st.setProperty('--g-top', area(1, 2, top + 1, -2));
+  st.setProperty('--g-text', area(top + 1, 2, `span ${T}`, -2));
+  st.setProperty('--g-price', area(top + T + 1, 2, `span ${P}`, -2));
+  st.setProperty('--g-btn', area(top + T + P + 1, 1, `span ${B}`, -1));
+  st.setProperty('--g-img', area(top + T + P + B + 1, 2, -1, -2));
+  // no grid behind the title and lead
+  const ar = abo.getBoundingClientRect(), rs = getComputedStyle(document.documentElement);
+  snapHole(document.getElementById('holeAbo'), contentRect(aboHead), ar.left, ar.top, parseFloat(rs.getPropertyValue('--gx')), parseFloat(rs.getPropertyValue('--gy')));
+}
+
+// header turns yellow while the section is under it
+function aboHeader() {
+  const r = abo.getBoundingClientRect(), y = header.offsetHeight / 2;
+  header.classList.toggle('on-yellow', r.top <= y && r.bottom > y);
+}
+addEventListener('scroll', aboHeader, { passive: true });
+
+const aboTitle = document.getElementById('aboTitle');
+const buildAbo = () => { abo.classList.add('is-built'); revealTitle(aboTitle); };
+hideTitle(aboTitle);
+if (reduce || !('IntersectionObserver' in window)) buildAbo();
+else new IntersectionObserver((entries, io) => {
+  if (entries.some(e => e.isIntersecting)) { buildAbo(); io.disconnect(); }
+}, { threshold: .2 }).observe(abo);
+
+addEventListener('resize', () => { measureAbo(); aboHeader(); });
+measureAbo(); aboHeader();
+document.fonts && document.fonts.ready.then(measureAbo);
 </script>
 </body>
 </html>
