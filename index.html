@@ -170,6 +170,26 @@
   .bag.back { z-index: 3; }
   .bean { z-index: 7; }
 
+  /* ================================================================ marquee between the last hero frame and the shop
+     Two tilted bands that cross, running opposite ways. They keep running on their own and turn around when
+     the scroll direction turns. Front band: 20 % black over the brown, back band: 40 % black and dimmer text. */
+  .marquee { position: relative; z-index: 2; height: calc(var(--gy) * 2); overflow: clip; overflow-clip-margin: 40px;
+             background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                         linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--brown);
+             color: var(--pink-light); pointer-events: none; user-select: none; }
+  @media (min-width: 1024px) { .marquee { margin-top: -60px; } }
+  .mq-band { position: absolute; left: -10vw; width: 120vw; top: 50%; overflow: hidden; white-space: nowrap;
+             padding-block: clamp(10px, 1.4vw, 20px); }
+  .mq-band--back  { background: rgb(0 0 0 / .4); transform: translateY(-78%) rotate(2.4deg); }
+  .mq-band--front { background: rgb(0 0 0 / .2); transform: translateY(-22%) rotate(-2.4deg); }
+  .mq-band--back .mq-track { opacity: .45; }
+  .mq-track { display: inline-flex; will-change: transform; }
+  .mq-set { display: inline-flex; flex-shrink: 0; align-items: center; font-family: var(--display); font-weight: 500;
+            font-size: clamp(26px, 3.1vw, 48px); line-height: 1.1; letter-spacing: .01em; }
+  .mq-set span { padding-inline: .35em; }
+  .mq-set i { font-style: normal; opacity: .8; }
+  .mq-band--back .mq-set { font-size: clamp(22px, 2.5vw, 38px); }
+
   /* ================================================================ shop: product card carousel */
   /* One screen tall, starts under the fixed header. Card and image size are worked out in JS
      from the space that is left, so the whole carousel always fits the viewport. */
@@ -180,7 +200,7 @@
           padding-top: var(--header-h); padding-bottom: 0;
           overflow: clip; isolation: isolate; }
   /* desktop: tuck the shop 60px up under the empty bottom of the last hero frame, ~200px between them */
-  @media (min-width: 1024px) { .shop { margin-top: -60px; } }
+
   /* title boxes: whole rows high, text 24 px in from the box's left edge and centred in its height */
   .shop-head, .abo-head { position: relative; z-index: 12; display: flex; flex-direction: column; justify-content: center;
                           padding-inline: var(--pad); }
@@ -408,6 +428,11 @@
   </div>
 </div>
 <div class="end"></div>
+
+<div class="marquee" id="marquee" aria-hidden="true">
+  <div class="mq-band mq-band--back"><div class="mq-track"></div></div>
+  <div class="mq-band mq-band--front"><div class="mq-track"></div></div>
+</div>
 
 <section class="shop" id="shop" aria-labelledby="shopTitle">
   <div class="hole" id="holeShop" aria-hidden="true"></div>
@@ -1213,6 +1238,43 @@ addEventListener('resize', () => {
 });
 measure(); parallax();
 document.fonts && document.fonts.ready.then(measure);
+
+// ================================================================ marquee
+// Each band repeats the same set of words as often as needed to cover it, and moves by its own offset,
+// wrapped around one set's width, so it never jumps back to the start. Scrolling down: the front band
+// runs left and the back band right; scrolling up turns both around (smoothly). Scrolling also speeds them up a little.
+{
+  const WORDS = ['Ferskbrent', 'Hele bønner', 'Filtermalt', 'Drip bags'];
+  const set = () => `<div class="mq-set">${WORDS.map(w => `<span>${w}</span><i>·</i>`).join('')}</div>`;
+  const bands = [...document.querySelectorAll('#marquee .mq-band')].map((band, i) => ({
+    track: band.querySelector('.mq-track'), x: i * 180, dir: i ? -1 : 1, w: 1, sign: i ? -1 : 1, band,
+  }));
+  const fill = () => bands.forEach(b => {
+    b.track.innerHTML = set();
+    b.w = b.track.firstElementChild.getBoundingClientRect().width || 1;
+    b.track.innerHTML = set().repeat(Math.ceil(b.band.clientWidth / b.w) + 2);
+  });
+  fill(); addEventListener('resize', fill);
+  document.fonts && document.fonts.ready.then(fill);
+  let target = 1, boost = 0, lastY = scrollY, lastT = performance.now();
+  addEventListener('scroll', () => {
+    const dy = scrollY - lastY; lastY = scrollY;
+    if (dy) target = dy > 0 ? 1 : -1;
+    boost = Math.min(6, boost + Math.abs(dy) * .02);
+  }, { passive: true });
+  const SPEED = 45;                                  // px per second at rest
+  const tick = t => {
+    const dt = Math.min(.05, (t - lastT) / 1000); lastT = t;
+    boost *= Math.pow(.04, dt);                      // scroll boost fades out in about a second
+    for (const b of bands) {
+      b.dir += (target * b.sign - b.dir) * Math.min(1, dt * 4);     // turn around smoothly
+      b.x = ((b.x + b.dir * SPEED * (1 + boost) * dt) % b.w + b.w) % b.w;
+      b.track.style.transform = `translate3d(${-b.x}px, 0, 0)`;
+    }
+    requestAnimationFrame(tick);
+  };
+  if (!reduce) requestAnimationFrame(tick);
+}
 
 // ================================================================ subscription
 // Same card as the shop. Bag stacks are placed as in the sketch, in fractions of the card width
