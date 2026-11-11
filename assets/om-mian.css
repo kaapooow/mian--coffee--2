@@ -54,7 +54,11 @@ body.er-dag #logoBrown { opacity: 1; }
 .kap-01 { padding-top: 0; min-height: 0; }
 .kap-01.hode-ute { padding-top: var(--header-h); }             /* headline above the pinned stage */
 .k01-lop { position: relative; }                               /* the scroll distance */
-.k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip; }
+/* the stage carries its own grid on the sky colour, so the page grid behind it does not scroll past
+   while the days run: the only thing that moves is the calendar filling up */
+.k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip;
+           background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                       linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--bg); }
 .k01-pin > .container { padding-top: var(--header-h); }
 
 .kal { position: absolute; display: grid; grid-template-columns: repeat(var(--n), var(--ux)); grid-auto-rows: var(--uy); }
