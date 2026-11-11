@@ -220,17 +220,22 @@
                          linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--surface-brown);
              color: var(--fg-on-brown); pointer-events: none; user-select: none; }
   @media (min-width: 1024px) { .marquee { margin-top: -60px; } }
-  .mq-band { position: absolute; left: -10vw; width: 120vw; top: 50%; overflow: hidden; white-space: nowrap;
-             padding-block: clamp(10px, 1.4vw, 20px); }
+  /* band height on the 8 px scale: 4rem (64 px) on mobile, 6rem (96 px) on tablet, 8rem (128 px) on desktop;
+     the words are sized from it */
+  .marquee { --mq-h: 4rem; }
+  @media (min-width: 640px)  { .marquee { --mq-h: 6rem; } }
+  @media (min-width: 1024px) { .marquee { --mq-h: 8rem; } }
+  .mq-band { position: absolute; left: -10vw; width: 120vw; top: 50%; height: var(--mq-h); display: flex; align-items: center;
+             overflow: hidden; white-space: nowrap; }
   .mq-band--back  { background: var(--marquee-back); transform: translateY(-62%) rotate(-5deg); }
   .mq-band--front { background: var(--marquee-front); transform: translateY(-38%) rotate(5deg); }
   .mq-band--back .mq-track { opacity: .45; }
   .mq-track { display: inline-flex; will-change: transform; }
   .mq-set { display: inline-flex; flex-shrink: 0; align-items: center; font-family: var(--display); font-weight: 500;
-            font-size: clamp(26px, 3.1vw, 48px); line-height: 1.1; letter-spacing: .01em; }
+            font-size: calc(var(--mq-h) * .4); line-height: 1; letter-spacing: .01em; }
   .mq-set span { padding-inline: .35em; }
   .mq-set i { font-style: normal; opacity: .8; }
-  .mq-band--back .mq-set { font-size: clamp(22px, 2.5vw, 38px); }
+  .mq-band--back .mq-set { font-size: calc(var(--mq-h) * .32); }
 
   /* ================================================================ shop: product card carousel */
   /* One screen tall, starts under the fixed header. Card and image size are worked out in JS
