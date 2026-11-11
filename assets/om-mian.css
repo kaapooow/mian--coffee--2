@@ -48,14 +48,60 @@ body.er-dag #logoBrown { opacity: 1; }
           background: var(--bg); font-family: var(--display); font-weight: 500; line-height: 1;
           font-variant-numeric: tabular-nums; pointer-events: none; }
 
+/* buttons on this page follow the morning: text colour as fill, sky colour as text */
+.btn--morgen { background: var(--morning-fg); color: var(--morning-bg); border: 0; cursor: pointer; font: inherit; font-weight: 600; gap: 8px;
+               transition: background-color .4s ease, color .4s ease, transform .15s ease; }
+.btn--morgen svg { width: 20px; height: 20px; }
+.btn--morgen:focus-visible { outline: 3px solid var(--morning-accent); outline-offset: 3px; }
+.kap-cta { margin-top: 24px; }
+
+/* ================================================================ 00: the light comes on
+   Pinned stage. One big bean in the dark; scrolling turns the light on (the night picture fades off the
+   lit one), the bean turns, then shrinks and travels to day 1 of the calendar. The big bean is fixed to
+   the screen (.k00-stor) so it can cross from this chapter to the next. Only opacity and transform change. */
+.kap-00 { padding-top: 0; min-height: 0; }
+.k00-scene { position: absolute; z-index: 1; pointer-events: none; }   /* over the title box's fill, under its text: the light is not cut by the box */
+.k00-pin > .container { position: relative; z-index: 2; }
+.k00-stor { position: fixed; z-index: 20; pointer-events: none; will-change: transform; }
+.k00-stor.fast { position: absolute; z-index: 1; }             /* reduced motion: stays in the opening */
+.k00-lag { position: absolute; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
+/* light: soft, no edges. A wide wash from above and a warm glow on the grid around the bean. */
+.k00-lys { position: absolute; left: -30%; width: 160%; opacity: 0;
+           background: radial-gradient(ellipse 50% 100% at 50% 0%, color-mix(in srgb, var(--cream-100) 16%, transparent),
+                                       color-mix(in srgb, var(--yellow-400) 6%, transparent) 45%, transparent 72%); }
+.k00-glod { position: absolute; inset: -30%; opacity: 0;
+            background: radial-gradient(closest-side, color-mix(in srgb, var(--yellow-400) 20%, transparent),
+                                        color-mix(in srgb, var(--yellow-400) 7%, transparent) 55%, transparent); }
+/* small beans in depth layers around the big one: each moves at its own speed with the scroll (--p00 goes 0 → 1) */
+.k00-bonner { position: absolute; inset: -18%; opacity: 0; }
+.k00-bonne { position: absolute; height: auto; will-change: transform;
+             transform: translate3d(0, calc(var(--p00, 0) * var(--v) * -1px), 0) rotate(var(--rot)); }
+
+/* film window */
+.film { width: min(960px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 12px; overflow: hidden;
+        background: var(--brown-950); color: var(--pink-200); }
+.film::backdrop { background: color-mix(in srgb, var(--night-950) 80%, transparent); }
+.film-topp { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 12px 12px 20px; }
+.film-topp h2 { font-family: var(--display); font-weight: 500; font-size: 18px; line-height: 1.2; }
+.film-lukk { min-height: 44px; padding: 8px 16px; border: 0; border-radius: 9999px; background: var(--pink-200); color: var(--brown-800);
+             font: 600 15px/1 var(--text); cursor: pointer; }
+.film-lukk:focus-visible { outline: 3px solid var(--pink-500); outline-offset: 2px; }
+.film video, .film-ph { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--night-950); }
+.film-ph { display: grid; place-items: center; text-align: center; padding: 24px; font-weight: 500; line-height: 1.5;
+           background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--pink-200) 6%, transparent) 0 12px, transparent 12px 24px), var(--night-950); }
+
 /* ================================================================ 01: 45 days
    The page grid becomes a calendar: 45 cells fill one by one as you scroll. The stage is pinned
    (sticky) while the days run; JS places the parts on whole columns and rows. */
 .kap-01 { padding-top: 0; min-height: 0; }
 .kap-01.hode-ute { padding-top: var(--header-h); }             /* headline above the pinned stage */
-.k01-lop { position: relative; }                               /* the scroll distance */
-.k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip; }
-.k01-pin > .container { padding-top: var(--header-h); }
+.k00-lop, .k01-lop { position: relative; }                               /* the scroll distance */
+/* the stage carries its own grid on the sky colour, so the page grid behind it does not scroll past
+   while the days run: the only thing that moves is the calendar filling up */
+.k00-pin, .k01-pin { position: sticky; top: 0; height: var(--vh, 100vh); overflow: clip;
+           background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                       linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy), var(--bg); }
+.k00-pin > .container, .k01-pin > .container { padding-top: var(--header-h); }
 
 .kal { position: absolute; display: grid; grid-template-columns: repeat(var(--n), var(--ux)); grid-auto-rows: var(--uy); }
 .kal-dag { position: relative; }
@@ -65,6 +111,9 @@ body.er-dag #logoBrown { opacity: 1; }
 .kal-dag i::before { content: attr(data-n); position: absolute; left: 7px; top: 6px; font: 600 12px/1 var(--text); }
 .kal-dag.pa i { opacity: 1; transform: none; }
 .kal-dag.merke i { background: var(--morning-mark); color: var(--morning-on-mark); }
+/* the bean from the opening lands in day 1: the fixed one hands over to this one when the stage pins */
+.kal-bonne { position: absolute; left: 5%; top: 50%; width: 90%; height: auto; aspect-ratio: 1; margin-top: -45%; opacity: 0; pointer-events: none; }
+.kal.har-bonne .kal-bonne { opacity: 1; }
 
 /* counter box */
 .teller { position: absolute; display: flex; align-items: center; gap: 16px; padding-inline: var(--pad); background: var(--bg); }
@@ -99,5 +148,5 @@ body.er-dag #logoBrown { opacity: 1; }
 
 @media (prefers-reduced-motion: reduce) {
   body, .site-header, #logoPink, #logoBrown, .kal-dag i, .lapper.bunke .lapp { transition: none; }
-  .k01-pin { position: static; }
+  .k00-pin, .k01-pin { position: relative; }
 }
