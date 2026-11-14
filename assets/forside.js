@@ -130,6 +130,7 @@ function layoutEgenskaper() {
 
 function layout() {
   W = innerWidth; H = innerHeight;
+  if (W < 50 || H < 50) return false;          // hidden or not sized yet (e.g. a preview panel): wait for a resize
   gridCells();
   root.style.setProperty('--vh', px(PG.rows * PG.gy));
   root.style.setProperty('--rows-produkt', Math.max(4, Math.round((W < 640 ? 440 : 455) / PG.gy)));
@@ -156,6 +157,7 @@ function layout() {
   layoutHaug();
   measure();
   update();
+  return true;
 }
 
 // ------------------------------------------------------------------ scroll: colours and hero exit
@@ -398,7 +400,10 @@ function haugFall() {
 }
 
 // ------------------------------------------------------------------ go
-layout();
-intro();
+// start once the window has a real size (a hidden preview panel can report 0 × 0 at first)
+(function start() {
+  if (!layout()) { requestAnimationFrame(start); return; }
+  intro();
+})();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => layout());
 addEventListener('load', () => layout());
