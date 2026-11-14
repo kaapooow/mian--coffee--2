@@ -120,8 +120,24 @@ function layoutHero() {
 const insetOf = r => `inset(${r.t + 1}px ${W - r.l - r.w}px ${H - r.t - r.h}px ${r.l + 1}px)`;
 
 // header boxes: whole columns wide. Logo from column 2, menu up to the last content column.
+const headerCeller = document.getElementById('headerCeller');
+let headerCells = [];
 function layoutHeader() {
   const g = PG, logo = document.getElementById('logoBoks'), meny = document.getElementById('menyBoks');
+  if (headerCells.length !== g.cols) {
+    const rnd = seeded(19);
+    headerCells = Array.from({ length: g.cols }, () => {
+      const cell = document.createElement('i');
+      return { cell, delay: rnd() * .72 };
+    });
+    headerCeller.replaceChildren(...headerCells.map(({ cell }) => cell));
+    header.style.setProperty('--header-cols', g.cols);
+  }
+  if (W < 1024) {
+    logo.style.width = '';
+    meny.style.width = '';
+    return;
+  }
   const cols = w => Math.ceil((w + 2 * PAD) / g.gx - .02);
   const lc = Math.max(W < 640 ? 2 : 3, cols(logo.querySelector('.logo-ord').getBoundingClientRect().width));
   logo.style.width = px(lc * g.gx);
@@ -191,8 +207,18 @@ function update() {
   }
   KEYS.forEach(k => setVar(VARS[k], cur[k]));
   root.style.setProperty('--hdr-bg', last['--bg']);
-  // header: in the row above section 2 until it reaches the top, then it stays (the wordmark turns into the mark)
-  const fast = header.getBoundingClientRect().top <= .5 && y > 2;
+  // Stable scattered cells: scrolling backwards reverses the reveal without reshuffling.
+  const start = tops[1] - H * .65;
+  const end = tops[1] - PG.gy;
+  const progress = clamp((y - start) / Math.max(1, end - start));
+  const reveal = REDUCE_MOTION ? (progress > 0 ? 1 : 0) : progress;
+  headerCells.forEach(({ cell, delay }) => {
+    cell.style.opacity = clamp((reveal - delay) / .28).toFixed(3);
+  });
+  header.style.setProperty('--header-content', clamp((reveal - .55) / .45).toFixed(3));
+  header.classList.toggle('visible', reveal >= .85);
+  if (reveal < .85 && header.classList.contains('open')) setMenu(false);
+  const fast = y >= end;
   if (fast !== header._fast) { header.classList.toggle('fast', fast); header._fast = fast; }
   // hero on the way out: the headline leaves a little faster than the page, the copy dims,
   // the beans keep their light and each one drifts at its own speed
@@ -316,7 +342,7 @@ once(() => haugFall(), { threshold: .3 }).observe(document.querySelector('.fot')
   } else cards.forEach(({ el, z }) => el.style.setProperty('--tz', z + 'px'));
 }
 
-// ------------------------------------------------------------------ 6. newsletter: lit grid cells, bouncing title, opening field
+// ------------------------------------------------------------------ 6. newsletter: lit grid cells, title reveal, opening field
 const nyhet = document.querySelector('.nyhet'), celleLag = document.getElementById('nyhetCeller'), skjema = document.getElementById('epost');
 let celler = [], cCols = 0, cRows = 0;
 function layoutCeller() {
@@ -343,13 +369,8 @@ function bolge(styrke = .22, fra) {
 }
 function nyhetInn() {
   const t = document.getElementById('nyhetTittel');
-  splitTitle(t); t.classList.remove('reveal-wait');
+  revealTitle(t);
   if (REDUCE_MOTION) return;
-  [...t.querySelectorAll('.ch')].forEach((c, i) => c.animate([
-    { opacity: 0, transform: 'translateY(-1.1em) rotate(-12deg)' },
-    { opacity: 1, transform: 'translateY(.08em) rotate(2deg)', offset: .55 },
-    { transform: 'translateY(-.04em)', offset: .78 }, { opacity: 1, transform: 'none' }],
-    { duration: 900, delay: 150 + i * 55, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'both' }));
   skjema.animate([{ transform: 'scaleX(.09)', opacity: 0 }, { transform: 'scaleX(.09)', opacity: 1, offset: .2 }, { transform: 'scaleX(1.02)', offset: .8 }, { transform: 'scaleX(1)', opacity: 1 }],
     { duration: 1100, delay: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'backwards' });
   skjema.querySelector('input').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 1500, fill: 'backwards' });
