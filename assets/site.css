@@ -28,6 +28,23 @@
   --pink-200:   #FCCDFF;
   --yellow-500: #F2C930;
   --yellow-400: #FFD433;
+  /* forside v2 (Figma «mian-redesign--2») */
+  --night-900:   #241A26;   /* pills and quiet surfaces on night */
+  --grid-cream:  #F7F1E5;   /* grid line colour on night, used at low strength */
+  --magenta-600: #BE00CC;   /* «Noe for enhver start!» */
+  --magenta-500: #ED00FF;   /* «Kjøp kaffe» */
+  --pink-300:    #F4BBF7;   /* product section */
+  --pink-50:     #FCEFFD;   /* product cards */
+  --green-950:   #1B301E;
+  --green-100:   #CBF2CE;
+  --blue-950:    #012566;   /* «Fra idé til kaffepose» */
+  --blue-900:    #192A6E;
+  --blue-600:    #2741AD;   /* story cards */
+  --blue-500:    #3151D8;
+  --blue-100:    #C7D2FF;
+  --orange-500:  #F45631;   /* «Fersk kaffe» */
+  --orange-900:  #501C10;
+  --cream-50:    #F9F4ED;
 
   /* 2. semantic: section backgrounds and their grid lines */
   --surface-green:  var(--green-900);     /* hero */

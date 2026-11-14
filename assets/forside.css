@@ -1,0 +1,245 @@
+/* Forside v2 (Figma «mian-redesign--2»). Tokens, page grid helpers, header, menu and title reveal come
+   from site.css and site.js. This file holds what only the front page uses.
+
+   Colours: every section has a theme (data-tema). forside.js blends the live tokens --bg, --grid, --hdr,
+   --pill-bg and --pill-fg between the themes as you scroll, so the background, the grid and the header
+   change colour together. Text colours inside a section are fixed per theme (below). */
+
+body { background: var(--bg); color: var(--white); }
+:root { --hero-fs: 120px; }
+
+/* one grid behind the whole page; every section is a whole number of rows high, so the lines run on */
+.fs { position: relative; overflow-x: clip;
+      background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
+                  linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy); }
+.sec { position: relative; padding-top: calc(var(--gy) * 2); padding-bottom: var(--gy); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* fixed text colours per theme */
+[data-tema="natt"]       { --t-tittel: var(--pink-200);  --t-tekst: var(--white); }
+[data-tema="gronn"]      { --t-tittel: var(--green-300); --t-tekst: var(--white); }
+[data-tema="rosa"]       { --t-tittel: var(--magenta-600); --t-tekst: var(--night-950); }
+[data-tema="bla"]        { --t-tittel: var(--blue-100);  --t-tekst: var(--white); }
+[data-tema="oransje"]    { --t-tittel: var(--cream-50);  --t-tekst: var(--cream-50); }
+[data-tema="natt-gronn"] { --t-tittel: var(--green-100); --t-tekst: var(--white); }
+[data-tema="fot"]        { --t-tittel: var(--cream-50);  --t-tekst: var(--cream-50); }
+
+/* ================================================================ boxes behind titles and leads
+   The box takes the page colour, so the grid is cleared behind the text. forside.js snaps every box to
+   whole columns and rows (text 24 px in, centred in the height). */
+.box { position: relative; z-index: 2; background: var(--bg); padding: var(--pad); }
+.head { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
+.tittel { font-family: var(--display); font-weight: 500; font-size: clamp(40px, 6.1vw, 88px); line-height: 1; color: var(--t-tittel); text-wrap: balance; }
+.lead { margin-top: 12px; max-width: 34em; font-weight: 500; font-size: clamp(16px, 1vw + 10px, 20px); line-height: 1.5; color: var(--t-tekst); text-wrap: pretty; }
+.handlinger { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin-top: 24px; }
+.levering { display: flex; align-items: center; gap: 8px; font-size: clamp(15px, .6vw + 11px, 18px); line-height: 1.5; color: var(--t-tekst); }
+.levering em { font-style: italic; font-weight: 400; }
+.levering svg { width: 24px; height: 24px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ================================================================ buttons (Figma: «Knapp / …») */
+.knapp { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 12px 24px;
+         border: 0; border-radius: 48px; font: 600 clamp(16px, .4vw + 13px, 18px)/1 var(--text); white-space: nowrap; cursor: pointer;
+         transition: transform .2s cubic-bezier(.22, 1, .36, 1), box-shadow .2s ease, background-color .2s ease; }
+.knapp:hover { transform: translateY(-2px); }
+.knapp:active { transform: translateY(0) scale(.98); }
+.knapp:focus-visible { outline: 3px solid var(--t-tittel); outline-offset: 3px; }
+.knapp img, .knapp svg { width: 24px; height: 24px; flex-shrink: 0; }
+.knapp svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.knapp--magenta { background: var(--magenta-500); color: var(--white); }
+.knapp--hvit    { background: var(--white); color: var(--black); }
+.knapp--mork    { background: var(--green-950); color: var(--white); }
+.knapp--svart   { background: var(--night-950); color: var(--white); }
+.knapp--natt    { background: color-mix(in srgb, var(--black) 40%, var(--blue-900)); color: var(--white); }
+.knapp--brun    { background: var(--orange-900); color: var(--cream-50); }
+
+/* ================================================================ header and menu on this page */
+.site-header { color: var(--hdr); transition: transform .7s cubic-bezier(.22, 1, .36, 1), opacity .5s ease; }
+.logo-mark { display: block; width: 50px; height: 40px; }
+@media (max-width: 639px) { .logo-mark { width: 40px; height: 32px; } }
+@media (min-width: 1024px) {
+  .nav a { background: var(--pill-bg); color: var(--pill-fg); min-height: 36px; padding: 6px 14px; font-size: 16px; }
+  .nav a.is-hover { color: var(--pill-fg); }
+  .nav-pill { height: 36px; background: color-mix(in srgb, var(--hdr) 30%, var(--pill-bg)); }
+  .nav a[aria-current] { background: var(--hdr); color: var(--bg); }
+}
+@media (min-width: 1280px) { .nav a { font-size: 17px; padding-inline: 16px; } }
+body.intro .site-header { transform: translateY(-110%); opacity: 0; }
+
+/* ================================================================ 1. hero
+   The section is exactly one screen of rows. forside.js places the parts on the grid. */
+.hero { height: var(--vh, 100vh); padding: 0; }
+.hero-fade { position: absolute; inset: 0 0 auto; height: 72%; z-index: 1; pointer-events: none;
+             background: linear-gradient(180deg, var(--bg) 0, var(--bg) 52%, color-mix(in srgb, var(--bg) 0%, transparent) 100%); }
+.intro-box { position: absolute; z-index: 3; background: var(--bg); display: grid; place-items: center; pointer-events: none; }
+.intro-logo { display: flex; flex-direction: column; align-items: center; gap: 33px; color: var(--pink-200); }
+.intro-mark { width: clamp(110px, 15vw, 220px); height: auto; aspect-ratio: 40 / 32; }
+.intro-ord { font-family: var(--display); font-weight: 400; font-size: clamp(32px, 4.2vw, 60px); line-height: .9; white-space: nowrap; }
+.intro-box.ferdig { display: none; }
+
+.hero-inner { position: absolute; inset: 0; z-index: 2; will-change: transform, opacity; }
+.hero-tittel { position: absolute; font-family: var(--display); font-weight: 700; font-size: var(--hero-fs); line-height: .82;
+               color: var(--pink-200); letter-spacing: 0; }
+.hero-tittel .aksent { color: var(--pink-500); }
+.anker { position: relative; display: inline-block; }
+/* beans on the headline, sized in em so they follow the type; they hover gently as if in space */
+.hb { position: absolute; z-index: 1; height: auto; pointer-events: none; filter: drop-shadow(0 .06em .08em rgba(0, 0, 0, .45));
+      animation: sveve var(--sv, 7s) ease-in-out infinite alternate; will-change: transform; }
+.hb-1 { width: .5em;  left: -.33em; top: .42em; --r0: 12deg;  --sv: 6.5s; }
+.hb-2 { width: .4em;  left: .78em;  top: -.06em; --r0: -24deg; --sv: 7.8s; }
+.hb-3 { width: .62em; left: calc(100% - .2em); top: .1em; --r0: 18deg; --sv: 8.6s; }
+@keyframes sveve {
+  0%   { transform: translate3d(0, 0, 0) rotate(var(--r0)); }
+  50%  { transform: translate3d(.03em, -.06em, 0) rotate(calc(var(--r0) + 7deg)); }
+  100% { transform: translate3d(-.02em, .03em, 0) rotate(calc(var(--r0) - 5deg)); }
+}
+.hero-rad { position: absolute; display: flex; align-items: stretch; gap: 0; }
+.hero-lead { display: flex; align-items: center; }
+.hero-lead p { font-weight: 500; font-size: clamp(16px, 1.2vw + 8px, 24px); line-height: 1.5; color: var(--white); text-wrap: pretty; }
+.hero-cta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hero-pil { position: absolute; z-index: 2; display: grid; place-items: center; background: var(--bg); color: var(--pink-200); }
+.hero-pil svg { width: 40px; height: 40px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+                animation: hopp 1.8s cubic-bezier(.45, 0, .55, 1) infinite; }
+.hero-pil:focus-visible { outline: 3px solid var(--pink-500); outline-offset: -6px; }
+@keyframes hopp { 0%, 100% { transform: translateY(-4px); } 50% { transform: translateY(8px); } }
+.hero-rad:not(.rad) { flex-direction: column; }
+
+/* ================================================================ 2. Søt, rund og laget for hverdagen */
+.detalj { position: absolute; top: 0; left: 39%; width: calc(var(--gx) * 2.2); height: auto; z-index: 1; pointer-events: none; }
+.egenskaper { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: var(--gy); }
+.egenskap { position: relative; z-index: 1; background: var(--green-100); color: var(--green-950); padding: 24px; min-height: calc(var(--rows-kort, 3) * var(--gy));
+            opacity: 0; transform: translate3d(-24px, 32px, 0) rotate(-2deg); transform-origin: 0 100%;
+            transition: opacity .6s ease, transform .9s cubic-bezier(.3, 1.28, .55, 1); transition-delay: calc(var(--i) * 140ms + 200ms); }
+.egenskap:first-of-type { border-radius: 8px 0 0 8px; }
+.egenskap:nth-of-type(3) { border-radius: 0 8px 8px 0; }
+.egenskap h3 { font-family: var(--display); font-weight: 500; font-size: clamp(32px, 2.4vw + 6px, 40px); line-height: 1; }
+.egenskap p { margin-top: 24px; max-width: 22em; font-weight: 500; font-size: clamp(16px, .6vw + 11px, 20px); line-height: 1.5; }
+.inne .egenskap { opacity: 1; transform: none; }
+/* beans around the cards: they fly in to their spots, then hover */
+.rom-bonne { position: absolute; z-index: 3; height: auto; pointer-events: none; opacity: 0;
+             transform: translate3d(var(--fx), var(--fy), 0) rotate(calc(var(--r0) - 120deg)) scale(1.6);
+             transition: opacity .5s ease, transform 1.4s cubic-bezier(.16, 1, .3, 1); transition-delay: var(--d); }
+.inne .rom-bonne { opacity: var(--o, 1); transform: rotate(var(--r0)); }
+.inne .rom-bonne.flyter { animation: sveve2 var(--sv) ease-in-out infinite alternate; transition: none; }
+@keyframes sveve2 {
+  0%   { transform: translate3d(0, 0, 0) rotate(var(--r0)); }
+  50%  { transform: translate3d(4px, -10px, 0) rotate(calc(var(--r0) + 8deg)); }
+  100% { transform: translate3d(-3px, 5px, 0) rotate(calc(var(--r0) - 6deg)); }
+}
+.rb-1 { width: 46px; left: -34px; top: -30px;   --r0: -34deg; --fx: -220px; --fy: -160px; --d: .5s;  --sv: 6s; }
+.rb-2 { width: 44px; left: calc(33.3% - 22px); bottom: -34px; --r0: 72deg; --fx: 40px; --fy: 260px; --d: .7s; --sv: 7.2s; }
+.rb-3 { width: 58px; left: calc(66.6% - 30px); top: -26px; --r0: 18deg; --fx: 180px; --fy: -240px; --d: .9s; --sv: 8s; --o: .5; filter: blur(9px); }
+@media (max-width: 767px) {
+  .egenskaper { grid-template-columns: 1fr; }
+  .egenskap:first-of-type { border-radius: 8px 8px 0 0; }
+  .egenskap:nth-of-type(3) { border-radius: 0 0 8px 8px; }
+  .rb-2 { left: auto; right: -14px; bottom: 30%; }
+  .rb-3 { left: 60%; top: 33%; }
+}
+
+/* ================================================================ 3. Noe for enhver start! */
+.kort-liste { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: var(--gy);
+              grid-auto-rows: calc(var(--rows-produkt, 5) * var(--gy) - 4px); }
+.pkort { position: relative; display: flex; flex-direction: column; overflow: clip; border-radius: 8px; padding: 24px;
+         background: linear-gradient(180deg, var(--pink-50), color-mix(in srgb, var(--pink-50) 64%, transparent));
+         color: var(--night-950);
+         opacity: 0; transform: translate3d(0, 48px, 0) scale(.97);
+         transition: opacity .6s ease, transform .9s cubic-bezier(.3, 1.2, .55, 1); transition-delay: calc(var(--i) * 90ms); }
+.inne .pkort { opacity: 1; transform: none; }
+.pkort h3 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 1.2vw + 16px, 32px); line-height: 1.25; }
+.pkort .pk-tekst { margin-top: 4px; font-weight: 500; font-size: 16px; line-height: 1.5; color: var(--green-950); max-width: 22em; }
+.pkort .pk-pris { margin-top: 16px; font-family: var(--display); font-weight: 500; font-size: 24px; line-height: 1; }
+.pk-bilde { position: relative; flex: 1; min-height: 0; margin: 16px -24px 0; }
+.pk-bilde img { position: absolute; left: 50%; bottom: 40px; height: calc(100% - 40px); width: auto; max-width: 60%; object-fit: contain; translate: -50% 0;
+                transition: transform .5s cubic-bezier(.22, 1, .36, 1); }
+.pk-bilde img.sky { height: calc(75% - 40px); opacity: .45; filter: blur(5px); }
+.pk-bilde img.sky-v { translate: -150% 0; }
+.pk-bilde img.sky-h { translate: 50% 0; }
+.pkort:hover .pk-bilde img:not(.sky) { transform: translateY(-6px) rotate(-2deg); }
+.pk-knapper { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: flex; gap: 4px; }
+.pk-knapper .knapp { min-height: 48px; }
+.pk-knapper .rund { width: 56px; padding: 12px; }
+@media (max-width: 1023px) { .kort-liste { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 639px)  { .kort-liste { grid-template-columns: 1fr; } }
+.flere { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: var(--gy); color: var(--t-tekst);
+         font-weight: 500; font-size: clamp(16px, 1vw + 10px, 20px); line-height: 1.5; }
+
+/* ================================================================ 4. Fra idé til kaffepose på 45 dager
+   The cards hang in a 3D space: the scene tilts after the pointer, each card shifts by its depth. */
+.dager .tittel { font-weight: 700; font-size: clamp(40px, 5.3vw, 77px); }
+.dager-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; gap: 0; }
+.rom { position: relative; align-self: center; height: calc(var(--gy) * 7); perspective: 1400px; perspective-origin: 30% 40%; }
+.rom-scene { position: absolute; inset: 0; transform-style: preserve-3d;
+             transform: rotateX(calc(15deg + var(--rx, 0deg))) rotateY(calc(18deg + var(--ry, 0deg))); }
+.dagkort { position: absolute; display: flex; flex-direction: column; gap: 16px; padding: 24px 32px; border-radius: 8px;
+           background: var(--blue-600); color: var(--blue-100); box-shadow: -16px 24px 36px 8px rgba(0, 0, 0, .24);
+           transform: translate3d(var(--tx, 0px), var(--ty, 0px), var(--tz, 0px)); will-change: transform;
+           opacity: 0; transition: opacity .8s ease; }
+.inne .dagkort { opacity: 1; }
+.dk-1 { left: 18%; top: 4%;  width: 86%; aspect-ratio: 690 / 596; transition-delay: .5s; }
+.dk-2 { left: 4%;  top: 22%; width: 76%; aspect-ratio: 606 / 482; background: var(--blue-500); transition-delay: .3s; }
+.dk-3 { left: 6%;  top: 50%; width: 62%; aspect-ratio: 497 / 372; background: color-mix(in srgb, var(--blue-500) 70%, var(--blue-950)); transition-delay: .1s; }
+.dagkort figcaption b { display: block; font-family: var(--display); font-weight: 500; font-size: clamp(18px, 1.2vw + 8px, 24px); line-height: 1; }
+.dagkort figcaption strong { font-weight: 600; }
+.dagkort figcaption span { display: block; margin-top: 8px; font-weight: 500; font-size: clamp(13px, .5vw + 9px, 16px); line-height: 1.5; }
+.dk-bilde { position: relative; flex: 1; min-height: 0; border-radius: 8px; overflow: hidden; background: center / cover no-repeat; }
+.dk-2 .dk-bilde { flex: 1; }
+.dk-bilde img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk-bilde::after { content: ""; position: absolute; inset: 0; background: rgba(246, 125, 255, .12); mix-blend-mode: hard-light; }
+@media (max-width: 1023px) {
+  .dager-grid { grid-template-columns: 1fr; gap: var(--gy); min-height: 0; }
+  .rom { height: max(calc(var(--gy) * 5), 72vw); margin-inline: calc(var(--gx) * -.5); }
+}
+
+/* ================================================================ 5. Fersk kaffe. Rett til deg. */
+.fersk { min-height: var(--vh); }
+.fersk .container { padding-left: calc(var(--gx) * var(--fersk-inn, 2)); }
+.fersk .tittel { font-weight: 700; font-size: clamp(44px, 5.3vw, 76px); line-height: 1; }
+.fersk .lead { max-width: 26em; }
+
+/* ================================================================ 6. Nyhetsbrev
+   On the way in: grid cells light up in a wave from the field, the title bounces in letter by letter and
+   the field opens out from the button. The pointer leaves a short trail of lit cells. */
+.nyhet { min-height: var(--vh); overflow: clip; }
+.nyhet-celler { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.celle { position: absolute; background: var(--green-300); opacity: 0; }
+.nyhet .container { position: relative; z-index: 1; }
+.nyhet .head { align-items: center; text-align: center; }
+.nyhet .tittel { font-weight: 700; font-size: clamp(56px, 10.4vw, 150px); line-height: 1; }
+.nyhet .lead { margin-top: 24px; }
+.epost { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: min(100%, 1054px); margin-top: 16px;
+         padding: 8px 8px 8px clamp(20px, 2.2vw, 32px); border-radius: 72px; background: var(--white); transform-origin: calc(100% - 52px) 50%; }
+.epost input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-family: var(--display); font-weight: 500;
+               font-size: clamp(17px, 3.8vw, 56px); line-height: 1.1; color: var(--green-950); padding: 0; }
+.epost input::placeholder { color: rgba(27, 48, 30, .32); }
+.epost button { display: grid; place-items: center; flex-shrink: 0; width: clamp(52px, 7.2vw, 104px); aspect-ratio: 1; border: 0; border-radius: 50%;
+                background: var(--green-950); color: var(--white); cursor: pointer; transition: transform .25s cubic-bezier(.22, 1, .36, 1); }
+.epost button svg { width: 46%; height: 46%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.epost button:hover { transform: scale(1.05); }
+.epost button:hover svg { animation: dytt .6s cubic-bezier(.22, 1, .36, 1); }
+.epost button:focus-visible, .epost:focus-within { outline: 3px solid var(--green-300); outline-offset: 4px; }
+@keyframes dytt { 0% { transform: none; } 40% { transform: translateX(6px); } 100% { transform: none; } }
+.epost.sendt button svg { animation: fly .9s cubic-bezier(.5, 0, .2, 1); }
+@keyframes fly { 0% { transform: none; } 45% { transform: translate(140%, -60%) rotate(-30deg); opacity: 0; } 46% { transform: translate(-140%, 0); opacity: 0; } 100% { transform: none; opacity: 1; } }
+.liten { margin-top: 24px; font-size: 14px; line-height: 1.5; color: var(--white); opacity: .8; font-weight: 500; }
+
+/* ================================================================ 7. Footer with the bean pile */
+.fot { min-height: var(--vh); padding: 0; overflow: clip; display: flex; flex-direction: column; }
+.fot-inner { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; text-align: center;
+             padding-top: calc(var(--gy) * 2); color: var(--cream-50); }
+.fot-mark { width: clamp(72px, 7.5vw, 110px); height: auto; aspect-ratio: 40 / 32; }
+.fot-slagord { margin-top: 24px; font-family: var(--display); font-weight: 400; font-size: clamp(20px, 1.4vw + 8px, 27px); line-height: 1; }
+.fot-meny { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 56px; }
+.fot-meny a { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 16px; border-radius: 9999px; background: var(--night-900);
+              color: var(--cream-50); font-weight: 500; font-size: 16px; line-height: 1; transition: background-color .2s ease, color .2s ease; }
+.fot-meny a:hover, .fot-meny a:focus-visible { background: var(--cream-50); color: var(--night-950); outline: none; }
+.haug { position: absolute; inset: auto 0 0; height: 58%; z-index: 1; pointer-events: none; }
+.haug img { position: absolute; left: 0; top: 0; height: auto; will-change: transform; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .5)); }
+@media (max-width: 1023px) { .fot-meny { flex-direction: column; align-items: center; gap: 8px; margin-top: 40px; } .haug { height: 48%; } }
+
+/* ================================================================ reduced motion: everything in place, nothing moves */
+@media (prefers-reduced-motion: reduce) {
+  .hb, .hero-pil svg, .rom-bonne { animation: none !important; }
+  .egenskap, .pkort, .rom-bonne, .dagkort { opacity: 1 !important; transform: none; transition: none !important; }
+  .rom-bonne { opacity: var(--o, 1) !important; transform: rotate(var(--r0)) !important; }
+  .site-header, .knapp, .pk-bilde img, .epost button { transition: none; }
+}
