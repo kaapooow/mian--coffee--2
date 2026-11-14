@@ -79,15 +79,15 @@ function layoutHero() {
   heroRad.classList.toggle('rad', wide);
   hero.style.setProperty('--vh', px(g.rows * g.gy));
   // headline size: as big as the content width allows (the longest line is about 6.3 em), never past 201 px
-  let fs = Math.min(201, wide ? g.cw / 6.35 : g.cw / 3.5);
-  const tTop = Math.ceil(Math.max(g.gy, 80) / g.gy - .02) * g.gy;     // under the header, on a row line
+  let fs = Math.min(201, W >= 640 || wide ? g.cw / 6.35 : g.cw / 3.5);   // three lines like the sketch; phones stack the words, big
+  const tTop = Math.max(36, g.gy * .86);                              // no header in the hero: the headline starts near the top
   heroTittel.style.left = px(g.c0); heroTittel.style.top = px(tTop);
   heroTittel.style.width = px(g.cw);
   const lead = heroRad.querySelector('.hero-lead'), cta = heroRad.querySelector('.hero-cta');
   for (let k = 0; k < 30; k++) {
     root.style.setProperty('--hero-fs', px(fs));
     const tb = heroTittel.getBoundingClientRect().height;
-    const top = Math.ceil((tTop + tb) / g.gy - .05) * g.gy;
+    const top = Math.ceil((tTop + tb + fs * .1) / g.gy - .05) * g.gy;      // room for the descenders (line-height .82)
     heroRad.style.left = px(g.c0); heroRad.style.top = px(top);
     // lead box: about half the content columns on wide screens, all of them on narrow ones
     const leadCols = wide ? Math.max(4, Math.min(g.C - 4, Math.round(g.C * .5))) : g.C;
@@ -119,6 +119,16 @@ function layoutHero() {
 }
 const insetOf = r => `inset(${r.t + 1}px ${W - r.l - r.w}px ${H - r.t - r.h}px ${r.l + 1}px)`;
 
+// header boxes: whole columns wide. Logo from column 2, menu up to the last content column.
+function layoutHeader() {
+  const g = PG, logo = document.getElementById('logoBoks'), meny = document.getElementById('menyBoks');
+  const cols = w => Math.ceil((w + 2 * PAD) / g.gx - .02);
+  const lc = Math.max(W < 640 ? 2 : 3, cols(logo.querySelector('.logo-ord').getBoundingClientRect().width));
+  logo.style.width = px(lc * g.gx);
+  const inner = W >= 1024 ? document.getElementById('nav') : menuBtn;
+  meny.style.width = px(Math.min(g.C - lc, cols(inner.scrollWidth)) * g.gx);
+}
+
 function layoutEgenskaper() {
   const cards = [...document.querySelectorAll('.egenskap')];
   cards.forEach(c => c.style.minHeight = '0');
@@ -137,6 +147,10 @@ function layout() {
   // section 5 starts a couple of columns in on wide screens, like the sketch
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
   layoutHero();
+  layoutHeader();
+  // product cards come in from left to right within their row
+  const kc = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
+  document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
   layoutEgenskaper();
   document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .flere') }));
   // sections that stand alone on one screen: the box centred on whole rows
@@ -144,7 +158,7 @@ function layout() {
     s.style.paddingTop = '';
     if (W < 1024 && s.classList.contains('dager')) return;
     const box = s.querySelector('.head'), rows = Math.round(box.getBoundingClientRect().height / PG.gy);
-    s.style.paddingTop = px(Math.max(2, Math.floor((PG.rows - rows) / 2)) * PG.gy);
+    s.style.paddingTop = px(Math.max(1, Math.floor((PG.rows - rows) / 2)) * PG.gy);
   });
   // every section a whole number of rows high, so the grid lines run on unbroken
   secs.forEach(s => {
@@ -177,11 +191,16 @@ function update() {
   }
   KEYS.forEach(k => setVar(VARS[k], cur[k]));
   root.style.setProperty('--hdr-bg', last['--bg']);
-  // hero: the content glides up and out, the beans a little faster
-  if (!REDUCE_MOTION && !document.body.classList.contains('intro')) {
-    const p = clamp(y / (H * .85));
-    heroInner.style.transform = `translate3d(0, ${-y * .42}px, 0)`;
-    heroInner.style.opacity = (1 - E.in(p)).toFixed(3);
+  // header: in the row above section 2 until it reaches the top, then it stays (the wordmark turns into the mark)
+  const fast = header.getBoundingClientRect().top <= .5 && y > 2;
+  if (fast !== header._fast) { header.classList.toggle('fast', fast); header._fast = fast; }
+  // hero on the way out: the headline leaves a little faster than the page, the copy dims,
+  // the beans keep their light and each one drifts at its own speed
+  if (!REDUCE_MOTION && y < H * 1.3) {
+    const p = clamp(y / (H * .42));
+    hero.style.setProperty('--tdim', (1 - .85 * p).toFixed(3));
+    hero.style.setProperty('--hy', Math.round(y));
+    heroTittel.style.transform = `translate3d(0, ${(-y * .26).toFixed(1)}px, 0)`;
   }
 }
 let ticking = false;
@@ -189,59 +208,78 @@ addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimat
 let rz;
 addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(layout, 120); });
 
-// ------------------------------------------------------------------ intro (under 3 s)
+// ------------------------------------------------------------------ intro
+// The logo comes calmly in, in its box in the middle. It glides up and out while the box opens into the
+// fade behind the headline. Then the headline comes in letter by letter (the same reveal as every title),
+// the beans spread out over it from the middle and start to hover, and lead, buttons and arrow follow.
 const ease = 'cubic-bezier(.22, 1, .36, 1)';
 function intro() {
-  const b = document.body;
   const heroBoxes = [...heroRad.children, heroPil];
   const beans = [...heroTittel.querySelectorAll('.hb')];
-  if (REDUCE_MOTION) { b.classList.remove('intro'); introBox.classList.add('ferdig'); return; }
+  if (REDUCE_MOTION) { introBox.classList.add('ferdig'); return; }
   hideTitle(heroTittel);
   heroBoxes.forEach(el => el.style.opacity = 0);
   beans.forEach(el => el.style.opacity = 0);
   heroFade.style.opacity = 0;
   introBox._playing = true;
-  const logo = introBox.querySelector('.intro-logo > *:first-child').parentElement;
+  const logo = introBox.querySelector('.intro-logo');
   const r = introBox._rect;
-  // 1. the logo arrives
-  [...logo.children].forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(16px) scale(.94)' }, { opacity: 1, transform: 'none' }],
-    { duration: 600, delay: 100 + i * 120, easing: ease, fill: 'both' }));
-  // 2. it goes up and out
-  [...logo.children].forEach((el, i) => el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-48px)' }],
-    { duration: 500, delay: 1000 + i * 60, easing: 'cubic-bezier(.55, 0, .7, .2)', fill: 'forwards' }));
+  const T_UT = 1900, T_TITTEL = 2600;
+  // 1. the logo arrives, calmly
+  [...logo.children].forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }],
+    { duration: 1100, delay: 250 + i * 200, easing: ease, fill: 'both' }));
+  // 2. it glides up and out, getting smaller and fainter on the way
+  logo.animate([{ opacity: 1, transform: 'none' }, { opacity: .25, offset: .7 }, { opacity: 0, transform: `translateY(${-(r.t + r.h * .5 + 40)}px) scale(.5)` }],
+    { duration: 950, delay: T_UT, easing: 'cubic-bezier(.6, 0, .3, 1)', fill: 'forwards' });
   // 3. the box opens into the fade behind the headline
   const fadeH = parseFloat(heroFade.style.height) || H * .6;
-  const open = introBox.animate([{ clipPath: insetOf(r) }, { clipPath: `inset(0px 0px ${Math.max(0, H - fadeH)}px 0px)` }],
-    { duration: 800, delay: 1250, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'forwards' });
-  heroFade.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 1750, fill: 'forwards' });
-  introBox.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, delay: 1950, fill: 'forwards' });
-  // 4. headline, beans, lead, buttons and the arrow
-  setTimeout(() => revealTitle(heroTittel), 1550);
-  beans.forEach((el, i) => el.animate([{ opacity: 0, transform: 'translate3d(0, -.6em, 0) scale(.4) rotate(-90deg)' }, { opacity: 1, transform: 'translate3d(0, 0, 0) rotate(var(--r0))' }],
-    { duration: 900, delay: 1900 + i * 150, easing: 'cubic-bezier(.3, 1.4, .55, 1)' }).finished.then(() => el.style.opacity = ''));
-  heroBoxes.forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }],
-    { duration: 700, delay: 2100 + i * 120, easing: ease, fill: 'backwards' }).finished.then(() => el.style.opacity = ''));
-  heroBoxes.forEach(el => setTimeout(() => el.style.opacity = '', 2100));
-  setTimeout(() => b.classList.remove('intro'), 1900);              // header slides down
-  setTimeout(() => { heroFade.style.opacity = ''; introBox._playing = false; introBox.classList.add('ferdig'); }, 2600);
-  setTimeout(() => { if (b.classList.contains('intro')) b.classList.remove('intro'); }, 4000);   // failsafe
+  introBox.animate([{ clipPath: insetOf(r) }, { clipPath: `inset(0px 0px ${Math.max(0, H - fadeH)}px 0px)` }],
+    { duration: 950, delay: T_UT + 50, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'forwards' });
+  heroFade.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, delay: T_TITTEL - 100, fill: 'forwards' });
+  introBox.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, delay: T_TITTEL + 50, fill: 'forwards' });
+  // 4. the headline, letter by letter
+  setTimeout(() => revealTitle(heroTittel), T_TITTEL);
+  // 5. the beans spread out from the middle of the headline to their places, then hover
+  const t = heroTittel.getBoundingClientRect(), cx = t.left + t.width / 2, cy = t.top + t.height / 2;
+  beans.forEach((el, i) => {
+    const b = el.getBoundingClientRect(), dx = cx - (b.left + b.width / 2), dy = cy - (b.top + b.height / 2);
+    el.animate([{ opacity: 0, transform: `translate3d(${dx}px, ${dy}px, 0) scale(.2) rotate(-160deg)` },
+                { opacity: 1, offset: .3 },
+                { opacity: 1, transform: 'translate3d(0, 0, 0) rotate(var(--r0))' }],
+      { duration: 1300, delay: T_TITTEL + 350 + i * 130, easing: 'cubic-bezier(.2, 1.15, .4, 1)', fill: 'backwards' });
+    setTimeout(() => el.style.opacity = '', T_TITTEL + 350 + i * 130 + 40);
+  });
+  // 6. lead, buttons and the arrow
+  heroBoxes.forEach((el, i) => {
+    el.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 800, delay: T_TITTEL + 500 + i * 130, easing: ease, fill: 'backwards' });
+    setTimeout(() => el.style.opacity = '', T_TITTEL + 500 + i * 130 + 40);
+  });
+  setTimeout(() => { heroFade.style.opacity = ''; introBox._playing = false; introBox.classList.add('ferdig'); }, T_TITTEL + 600);
 }
 
 // ------------------------------------------------------------------ reveals
-const io = new IntersectionObserver(es => es.forEach(e => {
-  if (!e.isIntersecting) return;
-  const s = e.target; io.unobserve(s);
-  s.classList.add('inne');
-  const t = s.querySelector('.head .tittel');
-  if (t && !s.classList.contains('nyhet')) revealTitle(t);
-  if (!REDUCE_MOTION) s.querySelectorAll('.head .lead, .head .handlinger, .head .liten, .flere > *').forEach((el, i) =>
-    el.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 350 + i * 110, easing: ease, fill: 'backwards' }));
-  if (s.classList.contains('hverdag')) setTimeout(() => s.querySelectorAll('.rom-bonne').forEach(b => b.classList.add('flyter')), 2600);
-  if (s.classList.contains('nyhet')) nyhetInn();
-  if (s.classList.contains('fot')) haugFall();
-}), { threshold: .22 });
+// Each part starts when it is on screen itself (sections can be several screens tall on a phone):
+// the title box, the groups under it, and every product card on its own.
+const once = (fn, opts) => { const o = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { o.unobserve(e.target); fn(e.target); } }), opts); return o; };
+const rise = (els, d0 = 350) => { if (!REDUCE_MOTION) els.forEach((el, i) =>
+  el.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: d0 + i * 110, easing: ease, fill: 'backwards' })); };
+const ioHead = once(head => {
+  const s = head.closest('.sec'), t = head.querySelector('.tittel');
+  if (s.classList.contains('nyhet')) nyhetInn(); else if (t) revealTitle(t);
+  rise([...head.querySelectorAll('.lead, .handlinger, .epost, .liten')].filter(el => !el.matches('.nyhet .epost')));
+}, { threshold: .35 });
+const ioGroup = once(el => {
+  el.classList.add('inne');
+  if (el.matches('.egenskaper')) setTimeout(() => el.querySelectorAll('.rom-bonne').forEach(b => b.classList.add('flyter')), 2600);
+  if (el.matches('.flere')) rise([...el.children], 100);
+}, { threshold: .2 });
+const ioKort = once(el => el.classList.add('inne'), { threshold: .15 });
 if (!REDUCE_MOTION) document.querySelectorAll('.sec:not(.hero) .head .tittel').forEach(t => hideTitle(t));
-secs.forEach(s => s !== hero && io.observe(s));
+document.querySelectorAll('.sec:not(.hero) .head').forEach(h => ioHead.observe(h));
+document.querySelectorAll('.egenskaper, .rom, .flere').forEach(g => ioGroup.observe(g));
+document.querySelectorAll('.pkort').forEach(k => ioKort.observe(k));
+once(() => haugFall(), { threshold: .3 }).observe(document.querySelector('.fot'));
 
 // ------------------------------------------------------------------ 4. cards in a 3D space, following the pointer
 {

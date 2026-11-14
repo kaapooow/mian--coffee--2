@@ -9,10 +9,12 @@ body { background: var(--bg); color: var(--white); }
 :root { --hero-fs: 120px; }
 
 /* one grid behind the whole page; every section is a whole number of rows high, so the lines run on */
-.fs { position: relative; overflow-x: clip;
+.fs { position: relative; overflow-x: clip; display: flex; flex-direction: column;
       background: linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy),
                   linear-gradient(180deg, var(--grid) 1px, transparent 1px) 0 0 / var(--gx) var(--gy); }
-.sec { position: relative; padding-top: calc(var(--gy) * 2); padding-bottom: var(--gy); }
+.fs > main { display: contents; }
+.sec { position: relative; order: 2; padding-top: var(--gy); padding-bottom: var(--gy); scroll-margin-top: var(--gy); }
+.sec.hero { order: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* fixed text colours per theme */
@@ -52,18 +54,34 @@ body { background: var(--bg); color: var(--white); }
 .knapp--natt    { background: color-mix(in srgb, var(--black) 40%, var(--blue-900)); color: var(--white); }
 .knapp--brun    { background: var(--orange-900); color: var(--cream-50); }
 
-/* ================================================================ header and menu on this page */
-.site-header { color: var(--hdr); transition: transform .7s cubic-bezier(.22, 1, .36, 1), opacity .5s ease; }
-.logo-mark { display: block; width: 50px; height: 40px; }
-@media (max-width: 639px) { .logo-mark { width: 40px; height: 32px; } }
+/* ================================================================ header and menu on this page
+   No header in the hero. The header is the row above section 2: it scrolls in with that section and then
+   sticks to the top. Logo and menu sit in boxes in the page colour (whole columns wide, one row high),
+   so the grid is cleared behind them like behind titles and leads; between the boxes the grid shows. */
+.site-header { position: sticky; inset: 0 auto auto; top: 0; order: 1; z-index: 40; height: var(--gy); color: var(--hdr); pointer-events: none; }
+.header-inner { height: 100%; padding: 0; gap: 0; align-items: stretch; }
+.hbox { position: relative; display: flex; align-items: center; padding-inline: var(--pad); background: var(--bg); pointer-events: auto; }
+.meny-boks { justify-content: flex-end; }
+.logo { height: auto; gap: 0; }
+.logo .logo-ord { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 2.9vw, 42px); line-height: .9; white-space: nowrap;
+            transition: opacity .35s ease, transform .5s cubic-bezier(.22, 1, .36, 1); }
+.logo-mark { position: absolute; left: var(--pad); top: 50%; display: block; width: 50px; height: 40px; margin-top: -20px; opacity: 0; transform: translateY(10px);
+             transition: opacity .35s ease, transform .5s cubic-bezier(.22, 1, .36, 1); }
+/* stuck to the top: the wordmark gives way to the mark */
+.site-header.fast .logo-ord { opacity: 0; transform: translateY(-10px); }
+.site-header.fast .logo-mark { opacity: 1; transform: none; }
+@media (max-width: 639px) { .logo-mark { width: 40px; height: 32px; margin-top: -16px; } }
 @media (min-width: 1024px) {
-  .nav a { background: var(--pill-bg); color: var(--pill-fg); min-height: 36px; padding: 6px 14px; font-size: 16px; }
+  .nav { gap: clamp(8px, 1.3vw, 24px); }
+  .nav a { background: var(--pill-bg); color: var(--pill-fg); min-height: 32px; padding: 4px 10px; font-size: clamp(15px, 1.25vw, 18px); }
   .nav a.is-hover { color: var(--pill-fg); }
-  .nav-pill { height: 36px; background: color-mix(in srgb, var(--hdr) 30%, var(--pill-bg)); }
+  .nav-pill { height: 32px; margin-top: 6px; background: color-mix(in srgb, var(--hdr) 30%, var(--pill-bg)); }
   .nav a[aria-current] { background: var(--hdr); color: var(--bg); }
 }
-@media (min-width: 1280px) { .nav a { font-size: 17px; padding-inline: 16px; } }
-body.intro .site-header { transform: translateY(-110%); opacity: 0; }
+@media (max-width: 1023px) {
+  .nav { position: absolute; inset: 100% 0 auto; background: var(--bg); pointer-events: auto; }
+  .site-header.open { background: none; }
+}
 
 /* ================================================================ 1. hero
    The section is exactly one screen of rows. forside.js places the parts on the grid. */
@@ -76,17 +94,20 @@ body.intro .site-header { transform: translateY(-110%); opacity: 0; }
 .intro-ord { font-family: var(--display); font-weight: 400; font-size: clamp(32px, 4.2vw, 60px); line-height: .9; white-space: nowrap; }
 .intro-box.ferdig { display: none; }
 
-.hero-inner { position: absolute; inset: 0; z-index: 2; will-change: transform, opacity; }
+.hero-inner { position: absolute; inset: 0; z-index: 2; }
+/* on the way out (scroll): the copy dims, the beans keep their light; forside.js sets --tdim and --hy */
+.hero-tittel .tw, .hero-lead p, .hero-cta .knapp, .hero-pil svg { opacity: var(--tdim, 1); }
 .hero-tittel { position: absolute; font-family: var(--display); font-weight: 700; font-size: var(--hero-fs); line-height: .82;
-               color: var(--pink-200); letter-spacing: 0; }
+               color: var(--pink-200); letter-spacing: 0; will-change: transform; }
 .hero-tittel .aksent { color: var(--pink-500); }
 .anker { position: relative; display: inline-block; }
 /* beans on the headline, sized in em so they follow the type; they hover gently as if in space */
 .hb { position: absolute; z-index: 1; height: auto; pointer-events: none; filter: drop-shadow(0 .06em .08em rgba(0, 0, 0, .45));
-      animation: sveve var(--sv, 7s) ease-in-out infinite alternate; will-change: transform; }
-.hb-1 { width: .5em;  left: -.33em; top: .42em; --r0: 12deg;  --sv: 6.5s; }
-.hb-2 { width: .4em;  left: .78em;  top: -.06em; --r0: -24deg; --sv: 7.8s; }
-.hb-3 { width: .62em; left: calc(100% - .2em); top: .1em; --r0: 18deg; --sv: 8.6s; }
+      animation: sveve var(--sv, 7s) ease-in-out infinite alternate; will-change: transform, translate;
+      translate: 0 calc(var(--hy, 0) * var(--k, 0) * 1px); }       /* each bean leaves at its own speed */
+.hb-1 { width: .5em;  left: -.33em; top: .42em; --r0: 12deg;  --sv: 6.5s; --k: .69; }
+.hb-2 { width: .4em;  left: .78em;  top: -.06em; --r0: -24deg; --sv: 7.8s; --k: -.11; }
+.hb-3 { width: .62em; left: calc(100% - .2em); top: .1em; --r0: 18deg; --sv: 8.6s; --k: .1; }
 @keyframes sveve {
   0%   { transform: translate3d(0, 0, 0) rotate(var(--r0)); }
   50%  { transform: translate3d(.03em, -.06em, 0) rotate(calc(var(--r0) + 7deg)); }
@@ -104,7 +125,8 @@ body.intro .site-header { transform: translateY(-110%); opacity: 0; }
 .hero-rad:not(.rad) { flex-direction: column; }
 
 /* ================================================================ 2. Søt, rund og laget for hverdagen */
-.detalj { position: absolute; top: 0; left: 39%; width: calc(var(--gx) * 2.2); height: auto; z-index: 1; pointer-events: none; }
+.hverdag { padding-top: 0; }
+.detalj { position: absolute; top: calc(var(--gy) * -1); left: 39%; width: calc(var(--gx) * 2.2); height: auto; z-index: 1; pointer-events: none; }
 .egenskaper { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: var(--gy); }
 .egenskap { position: relative; z-index: 1; background: var(--green-100); color: var(--green-950); padding: 24px; min-height: calc(var(--rows-kort, 3) * var(--gy));
             opacity: 0; transform: translate3d(-24px, 32px, 0) rotate(-2deg); transform-origin: 0 100%;
@@ -144,7 +166,7 @@ body.intro .site-header { transform: translateY(-110%); opacity: 0; }
          color: var(--night-950);
          opacity: 0; transform: translate3d(0, 48px, 0) scale(.97);
          transition: opacity .6s ease, transform .9s cubic-bezier(.3, 1.2, .55, 1); transition-delay: calc(var(--i) * 90ms); }
-.inne .pkort { opacity: 1; transform: none; }
+.pkort.inne { opacity: 1; transform: none; }
 .pkort h3 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 1.2vw + 16px, 32px); line-height: 1.25; }
 .pkort .pk-tekst { margin-top: 4px; font-weight: 500; font-size: 16px; line-height: 1.5; color: var(--green-950); max-width: 22em; }
 .pkort .pk-pris { margin-top: 16px; font-family: var(--display); font-weight: 500; font-size: 24px; line-height: 1; }
@@ -241,5 +263,5 @@ body.intro .site-header { transform: translateY(-110%); opacity: 0; }
   .hb, .hero-pil svg, .rom-bonne { animation: none !important; }
   .egenskap, .pkort, .rom-bonne, .dagkort { opacity: 1 !important; transform: none; transition: none !important; }
   .rom-bonne { opacity: var(--o, 1) !important; transform: rotate(var(--r0)) !important; }
-  .site-header, .knapp, .pk-bilde img, .epost button { transition: none; }
+  .logo-ord, .logo-mark, .knapp, .pk-bilde img, .epost button { transition: none; }
 }

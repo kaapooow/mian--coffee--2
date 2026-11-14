@@ -12,7 +12,7 @@
 <link rel="stylesheet" href="assets/site.css">
 <link rel="stylesheet" href="assets/forside.css">
 </head>
-<body class="intro">
+<body>
 <a class="skip" href="#main">Hopp til innhold</a>
 
 <!-- The logo mark is drawn once here and reused (currentColor follows the section colour). -->
@@ -20,26 +20,34 @@
   <symbol id="mark" viewBox="0 0 40 32"><path fill="currentColor" d="M36.8696 0C38.5985 0 40 1.40154 40 3.13042V28.8696C40 30.5985 38.5985 32 36.8696 32H32.6261C32.2803 32 32 31.7197 32 31.3739V18.6836C30.5884 22.7662 28.6746 26.2474 26.5842 28.7372C26.0909 29.3247 25.5875 29.8572 25.0783 30.3295C23.723 31.5863 21.8485 32 20.0002 32C18.1514 32 16.2765 31.5861 14.9211 30.3287C14.4122 29.8566 13.9091 29.3243 13.4162 28.7372C11.3257 26.2474 9.41167 22.7662 8 18.6836V31.3739C8 31.7197 7.71969 32 7.37392 32H3.13042C1.40154 32 0 30.5985 0 28.8696V3.13042C0 1.40154 1.40154 0 3.13042 0H10.2123C11.6291 0 12.8693 0.951639 13.236 2.32021L20 27.5636L26.764 2.32021C27.1307 0.951641 28.3709 0 29.7877 0H36.8696Z"/></symbol>
 </svg>
 
+
+
+<div class="fs">
+<!-- The page has no header in the hero: it sits in the row above section 2, comes in with it and then
+     stays at the top. It is first in the code (keyboard and screen readers) and placed after the hero with CSS.
+     Logo and menu each have a box in the page colour, like every other piece of content on the grid. -->
 <header class="site-header" id="header">
   <div class="container header-inner">
-    <a class="logo" href="./" aria-label="Mian Coffee, til forsiden">
+    <a class="logo hbox" id="logoBoks" href="./" aria-label="Mian Coffee, til forsiden">
+      <span class="logo-ord" aria-hidden="true">Mian Coffee</span>
       <svg class="logo-mark" width="56" height="44" aria-hidden="true"><use href="#mark"/></svg>
     </a>
-    <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="nav">
-      <span class="bars" aria-hidden="true"></span><span id="menuLabel">Meny</span>
-    </button>
-    <nav class="nav" id="nav" aria-label="Hovedmeny">
-      <span class="nav-pill" id="navPill" aria-hidden="true"></span>
-      <a href="#">Produkter</a>
-      <a href="#">Om oss</a>
-      <a href="#">Samarbeid</a>
-      <a href="om-mian/">Om Mian</a>
-      <a href="#">Kontakt</a>
-    </nav>
+    <div class="hbox meny-boks" id="menyBoks">
+      <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="nav">
+        <span class="bars" aria-hidden="true"></span><span id="menuLabel">Meny</span>
+      </button>
+      <nav class="nav" id="nav" aria-label="Hovedmeny">
+        <span class="nav-pill" id="navPill" aria-hidden="true"></span>
+        <a href="#">Produkter</a>
+        <a href="#">Om oss</a>
+        <a href="#">Samarbeid</a>
+        <a href="om-mian/">Om Mian</a>
+        <a href="#">Kontakt</a>
+      </nav>
+    </div>
   </div>
 </header>
-
-<main id="main" class="fs">
+<main id="main">
 
   <!-- 1. Hero. On load: the logo in a box in the middle, the logo goes up and out and the box opens
        into the soft fade that carries the headline. -->
@@ -178,6 +186,7 @@
     <div class="haug" id="haug" aria-hidden="true"></div>
   </footer>
 </main>
+</div>
 
 <script src="assets/site.js"></script>
 <script src="assets/forside.js"></script>
