@@ -171,8 +171,9 @@ function layout() {
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
   root.style.setProperty('--dager-cols', W >= 1024 ? Math.max(4, Math.round(PG.C * 5 / 11)) : PG.C);
   layoutHero();
-  // product cards come in from left to right within their row
+  // product cards: one column on a phone, two on a tablet, three from desktop, coming in left to right within their row
   const kc = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
+  root.style.setProperty('--kort-antall', kc);
   document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
   document.querySelectorAll('.egenskap').forEach((k, i) => k.style.setProperty('--i', W < 768 ? 0 : i));
   layoutEgenskaper();
