@@ -234,8 +234,6 @@ function update() {
   header.style.setProperty('--header-content', clamp((reveal - .55) / .45).toFixed(3));
   header.classList.toggle('visible', reveal >= .85);
   if (reveal < .85 && header.classList.contains('open')) setMenu(false);
-  const fast = y >= end;
-  if (fast !== header._fast) { header.classList.toggle('fast', fast); header._fast = fast; }
   // hero on the way out: the headline leaves a little faster than the page, the copy dims,
   // the beans keep their light and each one drifts at its own speed
   if (!REDUCE_MOTION && y < H * 1.3) {
