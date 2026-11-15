@@ -111,14 +111,14 @@ function layoutHero() {
     if (wide) { lead.style.height = cta.style.height = px(Math.max(lh, ch)); }
     else { lead.style.height = px(lh); cta.style.height = px(ch); }
     const rowH = wide ? Math.max(lh, ch) : lh + ch;
-    const pilTop = top + rowH;
-    Object.assign(heroPil.style, { left: px(g.c0), top: px(pilTop), width: px(g.gx), height: px(g.gy) });
+    const pilTop = top + rowH, pilC = Math.ceil(44 / g.gx), pilR = Math.ceil(44 / g.gy);   // at least a 44 px tap target
+    Object.assign(heroPil.style, { left: px(g.c0), top: px(pilTop), width: px(pilC * g.gx), height: px(pilR * g.gy) });
     heroFade.style.height = px(top);
-    if (pilTop + g.gy <= g.rows * g.gy || fs < 34) break;
+    if (pilTop + pilR * g.gy <= g.rows * g.gy || fs < 34) break;
     fs *= .93;
   }
   // intro box: 5 columns by 4 rows (fewer on narrow screens), centred on whole cells
-  const bc = Math.min(5, g.cols - 2), br = Math.min(4, g.rows - 2);
+  const bc = Math.min(Math.max(5, colsFor(440)), g.cols - 2), br = Math.min(Math.max(4, rowsFor(350)), g.rows - 2);
   const bl = Math.floor((g.cols - bc) / 2) * g.gx, bt = Math.floor((g.rows - br) / 2) * g.gy;
   introBox.style.inset = '0';
   introBox._rect = { l: bl, t: bt, w: bc * g.gx, h: br * g.gy };
@@ -126,36 +126,6 @@ function layoutHero() {
   if (!introBox._playing) introBox.style.clipPath = insetOf(introBox._rect);
 }
 const insetOf = r => `inset(${r.t + 1}px ${W - r.l - r.w}px ${H - r.t - r.h}px ${r.l + 1}px)`;
-
-// header boxes: whole columns wide. Logo from column 2, menu up to the last content column.
-const headerCeller = document.getElementById('headerCeller');
-let headerCells = [];
-function layoutHeader() {
-  const g = PG, logo = document.getElementById('logoBoks'), meny = document.getElementById('menyBoks');
-  const headerRows = W < 1024 ? 2 : 1;
-  const headerCols = W < 1024 ? g.cols : g.C;
-  const cellCount = headerCols * headerRows;
-  header.style.setProperty('--header-rows', headerRows);
-  if (headerCells.length !== cellCount) {
-    const rnd = seeded(19);
-    headerCells = Array.from({ length: cellCount }, () => {
-      const cell = document.createElement('i');
-      return { cell, delay: rnd() * .72 };
-    });
-    headerCeller.replaceChildren(...headerCells.map(({ cell }) => cell));
-    header.style.setProperty('--header-cols', headerCols);
-  }
-  if (W < 1024) {
-    logo.style.width = '';
-    meny.style.width = '';
-    return;
-  }
-  const cols = w => Math.ceil((w + 2 * PAD) / g.gx - .02);
-  const lc = Math.max(W < 640 ? 2 : 3, cols(logo.querySelector('.logo-ord').getBoundingClientRect().width));
-  logo.style.width = px(lc * g.gx);
-  const inner = W >= 1024 ? document.getElementById('nav') : menuBtn;
-  meny.style.width = px(Math.min(g.C - lc, cols(inner.scrollWidth)) * g.gx);
-}
 
 function layoutEgenskaper() {
   const cards = [...document.querySelectorAll('.egenskap')];
@@ -171,21 +141,12 @@ function layout() {
   if (W < 50 || H < 50) return false;          // hidden or not sized yet (e.g. a preview panel): wait for a resize
   gridCells();
   root.style.setProperty('--vh', px(PG.rows * PG.gy));
-  root.style.setProperty('--rows-produkt', Math.max(4, Math.round((W < 640 ? 440 : 455) / PG.gy)) + (W < 640 ? 1 : 2));
-  const cardCount = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
-  root.style.setProperty('--kort-antall', cardCount);
-  // Keep the arrow beside the cart whenever both buttons actually fit.
-  document.querySelectorAll('.pk-knapper').forEach(buttons => {
-    buttons.classList.remove('stablet');
-    const needed = [...buttons.children].reduce((sum, button) => sum + button.getBoundingClientRect().width, 0)
-      + parseFloat(getComputedStyle(buttons).columnGap);
-    buttons.classList.toggle('stablet', needed > buttons.getBoundingClientRect().width + .5);
-  });
+  root.style.setProperty('--rows-produkt', Math.max(4, Math.round((W < 640 ? 440 : 455) / PG.gy)));
+  root.style.setProperty('--sec-bunn', px(rowsFor(72) * PG.gy));      // air under each section, in whole rows
   // section 5 starts a couple of columns in on wide screens, like the sketch
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
   root.style.setProperty('--dager-cols', W >= 1024 ? Math.max(4, Math.round(PG.C * 5 / 11)) : PG.C);
   layoutHero();
-  layoutHeader();
   // product cards come in from left to right within their row
   const kc = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
   document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
@@ -416,10 +377,12 @@ function layoutDager() {
 
 // ------------------------------------------------------------------ 6. newsletter: lit grid cells, title reveal, opening field
 const nyhet = document.querySelector('.nyhet'), celleLag = document.getElementById('nyhetCeller'), skjema = document.getElementById('epost');
-let celler = [], cCols = 0, cRows = 0;
+let celler = [], cCols = 0, cRows = 0, cx0 = 0, cy0 = 0;
 function layoutCeller() {
-  const g = PG, h = nyhet.getBoundingClientRect().height || H;
-  cCols = g.cols; cRows = Math.ceil(h / g.gy);
+  // one element per cell, or per block of cells when they are small, so a phone animates a few hundred at most
+  const g = PG, h = nyhet.getBoundingClientRect().height || H, step = Math.max(1, Math.round(44 / g.gx));
+  cx0 = g.gx * step; cy0 = g.gy * step;
+  cCols = Math.ceil(g.cols / step); cRows = Math.ceil(h / cy0);
   if (celler.length !== cCols * cRows) {
     celleLag.textContent = ''; celler = [];
     const f = document.createDocumentFragment();
@@ -427,12 +390,12 @@ function layoutCeller() {
     celleLag.append(f);
   }
   celler.forEach((d, i) => { const c = i % cCols, r = Math.floor(i / cCols);
-    d.style.cssText = `left:${c * g.gx + 1}px;top:${r * g.gy + 1}px;width:${g.gx - 1}px;height:${g.gy - 1}px`; });
+    d.style.cssText = `left:${c * cx0 + 1}px;top:${r * cy0 + 1}px;width:${cx0 - 1}px;height:${cy0 - 1}px`; });
 }
 function bolge(styrke = .22, fra) {
   if (REDUCE_MOTION) return;
   const s = nyhet.getBoundingClientRect(), f = fra || skjema.getBoundingClientRect();
-  const fc = (f.left + f.width / 2 - s.left) / PG.gx, fr = (f.top + f.height / 2 - s.top) / PG.gy;
+  const fc = (f.left + f.width / 2 - s.left) / cx0, fr = (f.top + f.height / 2 - s.top) / cy0;
   celler.forEach((d, i) => {
     const c = i % cCols + .5, r = Math.floor(i / cCols) + .5, dist = Math.hypot(c - fc, r - fr);
     d.animate([{ opacity: 0 }, { opacity: styrke * (1 - Math.min(.7, dist / 24)) }, { opacity: 0 }],
@@ -454,7 +417,7 @@ function nyhetInn() {
   if (!REDUCE_MOTION) nyhet.addEventListener('pointermove', e => {
     if (e.pointerType !== 'mouse') return;
     const s = nyhet.getBoundingClientRect();
-    const i = Math.floor((e.clientY - s.top) / PG.gy) * cCols + Math.floor((e.clientX - s.left) / PG.gx);
+    const i = Math.floor((e.clientY - s.top) / cy0) * cCols + Math.floor((e.clientX - s.left) / cx0);
     if (i === lastCell || !celler[i]) return; lastCell = i;
     celler[i].animate([{ opacity: .22 }, { opacity: 0 }], { duration: 900, easing: 'ease-out' });
   });

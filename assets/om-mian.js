@@ -95,6 +95,8 @@
     ctx0.clearRect(0, 0, 800, 800); ctx0.drawImage(frames0[i], 0, 0, 800, 800);
   }
 
+  const hodeRad = () => rowsFor(44);                  // the header, in whole rows (two on a phone, one otherwise)
+
   function layout00() {
     const g = PG, stacked = g.C < 12 || innerHeight > innerWidth, head = k00.head;   // narrow or upright: bean under the title
     // title box: wide enough for the longest word pair of the headline at its font-size (7 columns on desktop)
@@ -103,9 +105,9 @@
     head.style.width = px(headCols * g.gx); head.style.marginTop = '0px'; P0.lead.style.maxWidth = '';
     let rows0 = headBox(pin0, head, k00.hole), size, cx, cy;
     if (stacked) {
-      const free = (g.rows - 1 - rows0 - 1) * g.gy;                       // between the title box and the clock's row
+      const free = (g.rows - hodeRad() - rows0 - rowsFor(88)) * g.gy;     // between the title box and the clock's row
       size = Math.min(innerWidth * 1.3, free * 1.45);
-      cx = innerWidth / 2; cy = (1 + rows0) * g.gy + free / 2;
+      cx = innerWidth / 2; cy = (hodeRad() + rows0) * g.gy + free / 2;
     } else {
       // the picture is a square with air around the bean: the bean itself is about 60 % of it.
       // It sits to the right and reaches in over the title box, so the lead gets a shorter line to make room.
@@ -113,12 +115,12 @@
       cx = (g.m + g.C - 3.2) * g.gx; cy = g.rows * g.gy * .56;
       P0.lead.style.maxWidth = px(Math.max(220, cx - size * .3 - 16 - (g.c0 + PAD)));
       rows0 = headBox(pin0, head, k00.hole);
-      if (!reduce) { head.style.marginTop = px(Math.max(0, Math.floor((g.rows - 1 - rows0) / 2) - 1) * g.gy); rows0 = headBox(pin0, head, k00.hole); }
+      if (!reduce) { head.style.marginTop = px(Math.max(0, Math.floor((g.rows - hodeRad() - rows0) / 2) - 1) * g.gy); rows0 = headBox(pin0, head, k00.hole); }
     }
     const box = { left: px(cx - size / 2), top: px(cy - size / 2), width: px(size), height: px(size) };
     Object.assign(scene.style, box); Object.assign(stor.style, box);
     Object.assign(P0.lys.style, { top: px(-(cy - size / 2) - g.gy), height: px(cy + size * .3 + g.gy) });   // from above the screen to below the bean, so no edge shows
-    const stageRows = reduce ? Math.max(Math.ceil((cy + size * .36) / g.gy), 1 + rows0) + 1 : g.rows;
+    const stageRows = reduce ? Math.max(Math.ceil((cy + size * .36) / g.gy), hodeRad() + rows0) + 1 : g.rows;
     pin0.style.height = px(stageRows * g.gy);
     const dist = reduce ? 0 : Math.round(g.rows * 2.2) * g.gy;
     lop0.style.height = px(stageRows * g.gy + dist);
@@ -184,14 +186,18 @@
   k01.sec.append(lop, listCont);
   const S01 = { top: 0, dist: 1, day: -1, cx: 0, cy: 0, cell: 1 };
 
-  // 45 cells on whole columns and rows. u = cell size in page cells (1, or a half when the screen is low).
-  function pickCalendar(maxCols, maxRows, units) {
+  // 45 cells on whole columns and rows. u = the size of a day in page cells, so a day stays about the same
+  // size in pixels whether the page cells are 88 px (desktop) or 24 px (phone).
+  function pickCalendar(maxCols, maxRows, units, fill) {
     for (const u of units) {
       let best = null;
       for (let n = Math.floor(maxCols / u); n >= 3; n--) {
         const r = Math.ceil(D.dager / n);
         if ((n * u) % 1 || (r * u) % 1 || r * u > maxRows) continue;
-        const score = (n * r - D.dager) * 10 + Math.abs(n - 9);
+        // wide screens: about nine days across, as few empty days as possible.
+        // narrow screens: as wide as the content columns allow, then as few empty days as possible.
+        const score = fill ? (Math.floor(maxCols / u) - n) * 10 + (n * r - D.dager)
+                           : (n * r - D.dager) * 10 + Math.abs(n - 9);
         if (!best || score < best.score) best = { u, n, r, score };
       }
       if (best) return best;
@@ -199,11 +205,14 @@
     return null;
   }
 
+  // the sizes a day may have, biggest first: about 88, 64, 48 px, then half a page cell on big grids
+  const dagUnits = () => [...new Set([colsFor(88), colsFor(64), colsFor(48)])].concat(PG.gx > 60 ? [.5] : []);
+
   function layout01() {
     const g = PG, sec = k01.sec;
-    const stacked = g.C < 12;                         // narrow: counter above the calendar, notes as a list below
-    const pinRows = g.rows - 2;                       // rows in the pinned stage: not the header row, not the clock's row
-    const Lc = stacked ? 0 : 4, cRows = 2;            // counter: 4 columns by 2 rows (full width when stacked)
+    const stacked = g.cw < 900;                       // narrow: counter above the calendar, notes as a list below
+    const pinRows = g.rows - rowsFor(88) - rowsFor(44);   // rows in the pinned stage: not the header, not the clock's row
+    const Lc = stacked ? 0 : colsFor(350), cRows = rowsFor(176);   // counter: about 350 x 176 px (full width when stacked)
     const maxCols = stacked ? g.C : g.C - Lc - 1;
     sec.classList.toggle('stablet', stacked);
 
@@ -217,14 +226,14 @@
     };
     if (headIn) {
       headRows = placeHead(true);
-      cal = pickCalendar(maxCols, pinRows - headRows, [1]);
+      cal = pickCalendar(maxCols, pinRows - headRows, [colsFor(88)]);
       if (!cal) headIn = false;
     }
     if (!headIn) {
       headRows = placeHead(false);
-      cal = pickCalendar(maxCols, pinRows - (stacked ? cRows : 0), [1, .5]) || { u: .5, n: 10, r: 5 };
+      cal = pickCalendar(maxCols, pinRows - (stacked ? cRows : 0), dagUnits(), stacked) || { u: .5, n: 10, r: 5 };
     }
-    const row0 = 1 + (headIn ? headRows : 0);         // first free row in the stage
+    const row0 = hodeRad() + (headIn ? headRows : 0);  // first free row in the stage
     const ux = cal.u * g.gx, uy = cal.u * g.gy;
 
     // counter
@@ -240,12 +249,12 @@
     kal.style.setProperty('--n', cal.n); kal.style.setProperty('--ux', px(ux)); kal.style.setProperty('--uy', px(uy));
 
     // notes: a pile under the counter if there is room for at least 2 rows, otherwise a list after the stage
-    const rest = (g.rows - 1) - (row0 + cRows);
+    const rest = (g.rows - rowsFor(88)) - (row0 + cRows);
     const pile = !stacked && !reduce && rest >= 2;
     lapper.classList.toggle('bunke', pile); lapper.classList.toggle('liste', !pile);
     if (pile) {
       pin.append(lapper);
-      const lr = Math.min(3, rest), inset = 12;
+      const lr = Math.min(rowsFor(264), rest), inset = 12;
       Object.assign(lapper.style, { left: px(g.c0 + inset), top: px((row0 + cRows) * g.gy + inset),
                                     width: px(Lc * g.gx - 2 * inset), height: px(lr * g.gy - 2 * inset) });
     } else {
@@ -312,8 +321,10 @@
     const g = gridCells();
     H = innerHeight;
     root.style.setProperty('--vh', px(g.rows * g.gy));
-    Object.assign(klokke.style, { left: px((g.m + g.C - 2) * g.gx + 1), top: px((g.rows - 1) * g.gy + 1),
-                                  width: px(2 * g.gx - 1), height: px(g.gy - 1), fontSize: px(Math.min(g.gy * .4, g.gx * .5)) });
+    const kc = colsFor(176), kr = rowsFor(88);                       // the clock: whole cells, about 176 x 88 px
+    Object.assign(klokke.style, { left: px((g.m + g.C - kc) * g.gx + 1), top: px((g.rows - kr) * g.gy + 1),
+                                  width: px(kc * g.gx - 1), height: px(kr * g.gy - 1),
+                                  fontSize: px(Math.min(kr * g.gy * .4, kc * g.gx * .5)) });
     for (const k of kap) if (k !== k01 && k !== k00) headBox(k.sec, k.head, k.hole);
     layout00();
     layout01();
