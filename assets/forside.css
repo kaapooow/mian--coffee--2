@@ -29,7 +29,12 @@ body { background: var(--bg); color: var(--white); }
 /* ================================================================ boxes behind titles and leads
    The box takes the page colour, so the grid is cleared behind the text. forside.js snaps every box to
    whole columns and rows (text 24 px in, centred in the height). */
-.box { position: relative; z-index: 2; background: var(--bg); padding: var(--pad); }
+.box { position: relative; z-index: 2; padding: var(--pad); }
+/* Layout occupies whole grid cells; only the inset surface hides their interior.
+   Adjacent surfaces share the next surface's 1 px top gap. */
+.box, .kort-gruppe, .hero-pil {
+  background: linear-gradient(var(--bg), var(--bg)) 1px 1px / calc(100% - 2px) calc(100% - 1px) no-repeat;
+}
 .head { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
 .tittel { font-family: var(--display); font-weight: 500; font-size: clamp(48px, 6.1vw, 88px); line-height: 1; color: var(--t-tittel); text-wrap: balance; }
 .lead { margin-top: 12px; max-width: 34em; font-weight: 500; font-size: clamp(16px, 1vw + 10px, 20px); line-height: 1.5; color: var(--t-tekst); text-wrap: pretty; }
@@ -124,17 +129,18 @@ body { background: var(--bg); color: var(--white); }
 .hero-rad:not(.rad) { flex-direction: column; }
 
 /* ================================================================ 2. Søt, rund og laget for hverdagen */
+.kort-panel { --kort-inn: 32px; position: relative; display: flex; flex-direction: column; }
+.kort-panel > .head { padding-inline: var(--kort-inn); }
+.kort-gruppe { padding: var(--kort-inn); }
+.kort-panel > .flere { margin: 0; padding: var(--kort-inn); }
 .hverdag { padding-top: 0; }
 .detalj { position: absolute; top: calc(var(--gy) * -1); left: 39%; width: calc(var(--gx) * 2.2); height: auto; z-index: 1; pointer-events: none; }
-.egenskaper { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: var(--gy); }
-.egenskap { position: relative; z-index: 1; background: var(--green-100); color: var(--green-950); padding: 24px; min-height: calc(var(--rows-kort, 3) * var(--gy));
-            opacity: 0; transform: translate3d(-24px, 32px, 0) rotate(-2deg); transform-origin: 0 100%;
-            transition: opacity .6s ease, transform .9s cubic-bezier(.3, 1.28, .55, 1); transition-delay: calc(var(--i) * 140ms + 200ms); }
-.egenskap:first-of-type { border-radius: 8px 0 0 8px; }
-.egenskap:nth-of-type(3) { border-radius: 0 8px 8px 0; }
+.egenskaper { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; }
+.egenskap { position: relative; z-index: 1; overflow: clip; border-radius: 2px; background: var(--green-100); color: var(--green-950); padding: 24px; min-height: calc(var(--rows-kort, 3) * var(--gy));
+            opacity: 0; }
 .egenskap h3 { font-family: var(--display); font-weight: 500; font-size: clamp(32px, 2.4vw + 6px, 40px); line-height: 1; }
 .egenskap p { margin-top: 24px; max-width: 22em; font-weight: 500; font-size: clamp(16px, .6vw + 11px, 20px); line-height: 1.5; }
-.inne .egenskap { opacity: 1; transform: none; }
+.egenskap.inne { opacity: 1; }
 /* beans around the cards: they fly in to their spots, then hover */
 .rom-bonne { position: absolute; z-index: 3; height: auto; pointer-events: none; opacity: 0;
              transform: translate3d(var(--fx), var(--fy), 0) rotate(calc(var(--r0) - 120deg)) scale(1.6);
@@ -150,38 +156,47 @@ body { background: var(--bg); color: var(--white); }
 .rb-2 { width: 44px; left: calc(33.3% - 22px); bottom: -34px; --r0: 72deg; --fx: 40px; --fy: 260px; --d: .7s; --sv: 7.2s; }
 .rb-3 { width: 58px; left: calc(66.6% - 30px); top: -26px; --r0: 18deg; --fx: 180px; --fy: -240px; --d: .9s; --sv: 8s; --o: .5; filter: blur(9px); }
 @media (max-width: 767px) {
-  .egenskaper { grid-template-columns: 1fr; }
-  .egenskap:first-of-type { border-radius: 8px 8px 0 0; }
-  .egenskap:nth-of-type(3) { border-radius: 0 0 8px 8px; }
+  .kort-panel { --kort-inn: 0px; }
+  .kort-panel > .head { padding-inline: 16px; }
+  .kort-gruppe { padding: 1px; }
+  .kort-panel > .flere { padding: 16px; }
+  .egenskaper { grid-template-columns: 1fr; gap: 1px; }
   .rb-2 { left: auto; right: -14px; bottom: 30%; }
   .rb-3 { left: 60%; top: 33%; }
 }
 
 /* ================================================================ 3. Noe for enhver start! */
-.kort-liste { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: var(--gy);
-              grid-auto-rows: calc(var(--rows-produkt, 5) * var(--gy) - 4px); }
-.pkort { position: relative; display: flex; flex-direction: column; overflow: clip; border-radius: 8px; padding: 24px;
-         background: linear-gradient(180deg, var(--pink-50), color-mix(in srgb, var(--pink-50) 64%, transparent));
+.kort-liste { list-style: none; display: grid; grid-template-columns: repeat(var(--kort-antall, 3), minmax(0, 1fr));
+              gap: 1rem; margin: 0;
+              grid-auto-rows: calc(var(--rows-produkt, 6) * var(--gy)); }
+.pkort { position: relative; container-type: inline-size; display: flex; flex-direction: column; overflow: clip; border-radius: 2px; padding: 24px;
+         background: var(--pink-50);
          color: var(--night-950);
-         opacity: 0; transform: translate3d(0, 48px, 0) scale(.97);
-         transition: opacity .6s ease, transform .9s cubic-bezier(.3, 1.2, .55, 1); transition-delay: calc(var(--i) * 90ms); }
-.pkort.inne { opacity: 1; transform: none; }
+         opacity: 0; }
+.pkort.inne { opacity: 1; }
 .pkort h3 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 1.2vw + 16px, 32px); line-height: 1.25; }
 .pkort .pk-tekst { margin-top: 4px; font-weight: 500; font-size: 16px; line-height: 1.5; color: var(--green-950); max-width: 22em; }
 .pkort .pk-pris { margin-top: 16px; font-family: var(--display); font-weight: 500; font-size: 24px; line-height: 1; }
 .pk-bilde { position: relative; flex: 1; min-height: 0; margin: 16px -24px 0; }
-.pk-bilde img { position: absolute; left: 50%; bottom: 40px; height: calc(100% - 40px); width: auto; max-width: 60%; object-fit: contain; translate: -50% 0;
+.pk-bilde img { position: absolute; left: 50%; bottom: 0; height: 100%; width: auto; max-width: 60%; object-fit: contain; translate: -50% 0;
                 transition: transform .5s cubic-bezier(.22, 1, .36, 1); }
-.pk-bilde img.sky { height: calc(75% - 40px); opacity: .45; filter: blur(5px); }
+.pk-bilde img.sky { height: 75%; opacity: .45; filter: blur(5px); }
 .pk-bilde img.sky-v { translate: -150% 0; }
 .pk-bilde img.sky-h { translate: 50% 0; }
 .pkort:hover .pk-bilde img:not(.sky) { transform: translateY(-6px) rotate(-2deg); }
-.pk-knapper { position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: flex; gap: 4px; }
-.pk-knapper .knapp { min-height: 48px; }
+.pk-knapper { display: flex; justify-content: center; flex-shrink: 0; gap: 4px; margin-top: 16px; }
+.pk-knapper .knapp { min-height: 48px; flex-shrink: 0; }
 .pk-knapper .rund { width: 56px; padding: 12px; }
-@media (max-width: 1023px) { .kort-liste { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 639px)  { .kort-liste { grid-template-columns: 1fr; } }
-.flere { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-top: var(--gy); color: var(--t-tekst);
+.pk-les-mer { display: none; }
+.pk-knapper.stablet { flex-direction: column; }
+.pk-knapper.stablet .knapp, .pk-knapper.stablet .knapp.rund { width: 100%; }
+.pk-knapper.stablet .pk-les-mer { display: inline; }
+@media (max-width: 639px) {
+  .pkort { padding: 16px; }
+  .pk-knapper .knapp { padding-inline: 12px; font-size: 14px; }
+  .pk-knapper .rund { width: 44px; }
+}
+.flere { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; color: var(--t-tekst);
          font-weight: 500; font-size: clamp(16px, 1vw + 10px, 20px); line-height: 1.5; }
 
 /* ================================================================ 4. Fra idé til kaffepose på 45 dager
@@ -207,8 +222,7 @@ body { background: var(--bg); color: var(--white); }
 .dk-bilde img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .dk-bilde::after { content: ""; position: absolute; inset: 0; background: rgba(246, 125, 255, .12); mix-blend-mode: hard-light; }
 @media (max-width: 1023px) {
-  .dager-grid { grid-template-columns: 1fr; gap: var(--gy); min-height: 0; }
-  .rom { height: max(calc(var(--gy) * 5), 72vw); margin-inline: calc(var(--gx) * -.5); }
+  .dager .head { padding-inline: 16px; }
 }
 
 /* ================================================================ 5. Fersk kaffe. Rett til deg. */

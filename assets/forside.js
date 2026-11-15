@@ -1,7 +1,7 @@
 // Forside v2, everything the front page does. Shared helpers (grid, tokens, title reveal, menu) come from site.js.
 // One scroll loop sets the live colour tokens and the hero's exit; reveals are started by IntersectionObserver;
-// the 3D cards, the newsletter cells and the bean pile run only while their section is on screen.
-// Only transform and opacity animate, except the clip-path of the intro box during the first second.
+// calendar hints reveal on scroll; newsletter cells and the bean pile animate in their sections.
+// Card surfaces and the intro box reveal with clip-path; their content uses transform and opacity.
 
 // ------------------------------------------------------------------ themes
 // bg = page, grid = grid lines, hdr = logo and selected menu item, pill / pillFg = menu items
@@ -53,7 +53,7 @@ document.getElementById('kortListe').innerHTML = PRODUKTER.map((p, i) => `
     </div>
     <div class="pk-knapper">
       <a class="knapp knapp--svart" href="#">${IKON_KURV}Legg i handlekurv</a>
-      <a class="knapp knapp--svart rund" href="#" aria-label="Les mer om ${p.navn}">${IKON_PIL}</a>
+      <a class="knapp knapp--svart rund" href="#" aria-label="Les mer om ${p.navn}"><span class="pk-les-mer">Les mer</span>${IKON_PIL}</a>
     </div>
   </li>`).join('');
 document.querySelectorAll('.egenskap').forEach((e, i) => e.style.setProperty('--i', i));
@@ -66,6 +66,14 @@ let H = innerHeight, W = innerWidth;
 function snapBox(box, { full = false } = {}) {
   const g = PG;
   box.style.width = ''; box.style.height = '';
+  // Panel children inherit their width from the grid-aligned outer surface.
+  if (box.parentElement.classList.contains('kort-panel')) {
+    const r = contentRect(box), style = fx(box);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    // Geometry stays on the grid; CSS insets the background, not the container.
+    box.style.height = px(Math.ceil((r.bottom - r.top + padding + 1) / g.gy) * g.gy);
+    return;
+  }
   const b = box.getBoundingClientRect(), r = contentRect(box);
   const maxW = Math.max(g.gx, Math.floor((box.parentElement.getBoundingClientRect().right - b.left) / g.gx + .02) * g.gx);
   const w = full ? maxW : Math.min(maxW, Math.ceil((r.right - b.left + PAD) / g.gx - .02) * g.gx);
@@ -137,20 +145,27 @@ function layout() {
   root.style.setProperty('--sec-bunn', px(rowsFor(72) * PG.gy));      // air under each section, in whole rows
   // section 5 starts a couple of columns in on wide screens, like the sketch
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
+  root.style.setProperty('--dager-cols', W >= 1024 ? Math.max(4, Math.round(PG.C * 5 / 11)) : PG.C);
   layoutHero();
   // product cards come in from left to right within their row
   const kc = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
   document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
+  document.querySelectorAll('.egenskap').forEach((k, i) => k.style.setProperty('--i', W < 768 ? 0 : i));
   layoutEgenskaper();
-  document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .flere') }));
+  document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .dager .head, .flere') }));
+  // Keep every container on whole rows; inset backgrounds expose the grid.
+  document.querySelectorAll('.kort-gruppe').forEach(group => {
+    group.style.minHeight = '';
+    group.style.minHeight = px(Math.ceil((group.getBoundingClientRect().height + 1) / PG.gy) * PG.gy);
+  });
   // sections that stand alone on one screen: the box centred on whole rows
   document.querySelectorAll('.sec.midt').forEach(s => {
     s.style.paddingTop = '';
-    if (W < 1024 && s.classList.contains('dager')) return;
     const box = s.querySelector('.head'), rows = Math.round(box.getBoundingClientRect().height / PG.gy);
     s.style.paddingTop = px(Math.max(1, Math.floor((PG.rows - rows) / 2)) * PG.gy);
   });
   // every section a whole number of rows high, so the grid lines run on unbroken
+  dagerSec.style.height = '';
   secs.forEach(s => {
     if (s === hero) return;
     s.style.minHeight = '';
@@ -159,6 +174,7 @@ function layout() {
   });
   layoutCeller();
   layoutHaug();
+  layoutDager();
   measure();
   update();
   return true;
@@ -181,8 +197,18 @@ function update() {
   }
   KEYS.forEach(k => setVar(VARS[k], cur[k]));
   root.style.setProperty('--hdr-bg', last['--bg']);
-  // header: in the row above section 2 until it reaches the top, then it stays (the wordmark turns into the mark)
-  const fast = header.getBoundingClientRect().top <= .5 && y > 2;
+  // Stable scattered cells: scrolling backwards reverses the reveal without reshuffling.
+  const start = tops[1] - H * .65;
+  const end = tops[1] - PG.gy;
+  const progress = clamp((y - start) / Math.max(1, end - start));
+  const reveal = REDUCE_MOTION ? (progress > 0 ? 1 : 0) : progress;
+  headerCells.forEach(({ cell, delay }) => {
+    cell.style.opacity = clamp((reveal - delay) / .28).toFixed(3);
+  });
+  header.style.setProperty('--header-content', clamp((reveal - .55) / .45).toFixed(3));
+  header.classList.toggle('visible', reveal >= .85);
+  if (reveal < .85 && header.classList.contains('open')) setMenu(false);
+  const fast = y >= end;
   if (fast !== header._fast) { header.classList.toggle('fast', fast); header._fast = fast; }
   // hero on the way out: the headline leaves a little faster than the page, the copy dims,
   // the beans keep their light and each one drifts at its own speed
@@ -264,49 +290,92 @@ const ioGroup = once(el => {
   if (el.matches('.egenskaper')) setTimeout(() => el.querySelectorAll('.rom-bonne').forEach(b => b.classList.add('flyter')), 2600);
   if (el.matches('.flere')) rise([...el.children], 100);
 }, { threshold: .2 });
-const ioKort = once(el => el.classList.add('inne'), { threshold: .15 });
+// Figma card-stagger-on-load: 100 ms pause, then a 1 s ease-out reveal
+// from the bottom edge. Title and body travel an extra 64 / 104 px.
+function revealCard(card) {
+  card.classList.add('inne');
+  if (REDUCE_MOTION) return;
+  const timing = { duration: 1000, delay: 100 + Number(fx(card).getPropertyValue('--i')) * 140,
+    easing: 'ease-out', fill: 'backwards' };
+  const height = card.offsetHeight - 1;
+  const animations = [card.animate([
+    { opacity: 0, clipPath: 'inset(calc(100% - 1px) 0 0)' },
+    { opacity: 1, clipPath: 'inset(0)' },
+  ], timing)];
+  [...card.children].forEach((child, i) => animations.push(child.animate([
+    { opacity: .2, transform: `translateY(${height + (i === 0 ? 64 : 104)}px)` },
+    { opacity: 1, transform: 'translateY(0)' },
+  ], timing)));
+  // Keyboard focus must immediately expose the card's actions.
+  const finish = () => animations.forEach(animation => animation.finish());
+  card.addEventListener('focusin', finish, { once: true });
+  Promise.all(animations.map(animation => animation.finished)).then(() => {
+    card.removeEventListener('focusin', finish);
+  });
+}
+const ioKort = once(revealCard, { threshold: .15 });
 if (!REDUCE_MOTION) document.querySelectorAll('.sec:not(.hero) .head .tittel').forEach(t => hideTitle(t));
 document.querySelectorAll('.sec:not(.hero) .head').forEach(h => ioHead.observe(h));
-document.querySelectorAll('.egenskaper, .rom, .flere').forEach(g => ioGroup.observe(g));
-document.querySelectorAll('.pkort').forEach(k => ioKort.observe(k));
+document.querySelectorAll('.egenskaper, .flere').forEach(g => ioGroup.observe(g));
+document.querySelectorAll('.egenskap, .pkort').forEach(k => ioKort.observe(k));
 once(() => haugFall(), { threshold: .3 }).observe(document.querySelector('.fot'));
 
-// ------------------------------------------------------------------ 4. cards in a 3D space, following the pointer
-{
-  const sec = document.querySelector('.dager'), scene = document.getElementById('romScene');
-  const cards = [...scene.querySelectorAll('.dagkort')].map(el => ({ el, z: +el.dataset.z }));
-  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  let tx = 0, ty = 0, cx = 0, cy = 0, on = false, raf = 0, t0 = performance.now();
-  if (!REDUCE_MOTION) {
-    sec.addEventListener('pointermove', e => {
-      if (e.pointerType !== 'mouse') return;
-      const r = scene.getBoundingClientRect();
-      tx = clamp((e.clientX - (r.left + r.width / 2)) / (r.width * .8), -1, 1);
-      ty = clamp((e.clientY - (r.top + r.height / 2)) / (r.height * .8), -1, 1);
-    });
-    sec.addEventListener('pointerleave', () => { tx = ty = 0; });
-    const tick = now => {
-      if (!fine) {   // touch: the scene tilts as the section scrolls past
-        const r = sec.getBoundingClientRect();
-        tx = clamp((H / 2 - (r.top + r.height / 2)) / H, -1, 1) * .8; ty = tx * -.5;
-      }
-      cx = lerp(cx, tx, .07); cy = lerp(cy, ty, .07);
-      const s = (now - t0) / 1000;
-      scene.style.setProperty('--ry', (cx * 12 + Math.sin(s * .6) * 1.6).toFixed(2) + 'deg');
-      scene.style.setProperty('--rx', (-cy * 9 + Math.cos(s * .5) * 1.2).toFixed(2) + 'deg');
-      cards.forEach(({ el, z }, i) => {
-        const d = (z + 200) / 260;                         // nearer cards move more
-        el.style.setProperty('--tx', (cx * 26 * d).toFixed(1) + 'px');
-        el.style.setProperty('--ty', (cy * 18 * d + Math.sin(s * .9 + i * 1.7) * 6).toFixed(1) + 'px');
-        el.style.setProperty('--tz', z + 'px');
-      });
-      raf = on ? requestAnimationFrame(tick) : 0;
-    };
-    new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) raf = requestAnimationFrame(tick); }).observe(sec);
-  } else cards.forEach(({ el, z }) => el.style.setProperty('--tz', z + 'px'));
+// ------------------------------------------------------------------ 4. calendar positions from Figma 481:15008
+const dagerSec = document.querySelector('.dager');
+const dagerLag = document.getElementById('dagerCeller');
+const DAGER_POSISJONER = [
+  [3, 1], [5, 1], [7, 2], [9, 3], [11, 3],
+  [7, 5], [8, 5], [10, 5], [7, 6],
+  [8, 7], [10, 7], [12, 7], [11, 8],
+];
+let dagerCeller = [], dagerLayout = '';
+function layoutDager() {
+  const { gx, gy, cols, m } = PG;
+  dagerSec.style.height = '';
+  const section = dagerSec.getBoundingClientRect();
+  const head = dagerSec.querySelector('.head').getBoundingClientRect();
+  const headCols = Math.round(head.width / gx);
+  const headTop = Math.round((head.top - section.top) / gy);
+  const bottom = Math.round((head.bottom - section.top) / gy);
+  const wide = W >= 1024;
+  // Anchor the reference's column 1 to the content edge and column 6 to the
+  // text box's right edge; the last column remains at the viewport edge.
+  const column = c => c <= 6
+    ? m + Math.round((c - 1) * headCols / 5)
+    : m + headCols + Math.round((c - 6) * (cols - 1 - m - headCols) / 6);
+  const chosen = DAGER_POSISJONER.map(([c, r], i) => {
+    if (!wide) {
+      // On narrow screens the text spans the content width. Keep 1–2 above
+      // it and arrange the remaining numbers in fixed rows below it.
+      return i < 2
+        ? { col: m + Math.round((i + 1) * (PG.C - 1) / 3), row: headTop - 1 }
+        : { col: m + (i - 2) % PG.C, row: bottom + Math.floor((i - 2) / PG.C) };
+    }
+    return { col: column(c), row: r < 7 ? headTop + r - 2 : Math.max(bottom, headTop + 5) + r - 7 };
+  });
+  const rows = Math.max(...chosen.map(p => p.row)) + 1;
+  dagerSec.style.height = px(Math.max(section.height, rows * gy));
+  const key = [cols, headTop, bottom, headCols, gx, gy, wide].join(':');
+  if (key === dagerLayout) return;
+  dagerLayout = key;
+  const revealed = new Set(dagerCeller.filter(d => d.el.classList.contains('inne')).map(d => d.day));
+  dagerCeller.forEach(({ el }) => ioKort.unobserve(el));
+  dagerCeller = chosen.map(({ col, row }, i) => {
+    const el = document.createElement('div'), day = i + 1;
+    el.className = 'dag-celle';
+    el.innerHTML = `<span>${day}</span>`;
+    const stagger = chosen.slice(0, i).filter(p => p.row === row).length;
+    el.style.cssText = `left:${col * gx + 1}px;top:${row * gy + 1}px;width:${gx - 1}px;height:${gy - 1}px;--i:${stagger}`;
+    if (REDUCE_MOTION || revealed.has(day)) el.classList.add('inne');
+    return { el, day, row };
+  });
+  dagerLag.replaceChildren(...dagerCeller.map(d => d.el));
+  dagerCeller.forEach(({ el }) => {
+    if (!el.classList.contains('inne')) ioKort.observe(el);
+  });
 }
 
-// ------------------------------------------------------------------ 6. newsletter: lit grid cells, bouncing title, opening field
+// ------------------------------------------------------------------ 6. newsletter: lit grid cells, title reveal, opening field
 const nyhet = document.querySelector('.nyhet'), celleLag = document.getElementById('nyhetCeller'), skjema = document.getElementById('epost');
 let celler = [], cCols = 0, cRows = 0, cx0 = 0, cy0 = 0;
 function layoutCeller() {
@@ -335,13 +404,8 @@ function bolge(styrke = .22, fra) {
 }
 function nyhetInn() {
   const t = document.getElementById('nyhetTittel');
-  splitTitle(t); t.classList.remove('reveal-wait');
+  revealTitle(t);
   if (REDUCE_MOTION) return;
-  [...t.querySelectorAll('.ch')].forEach((c, i) => c.animate([
-    { opacity: 0, transform: 'translateY(-1.1em) rotate(-12deg)' },
-    { opacity: 1, transform: 'translateY(.08em) rotate(2deg)', offset: .55 },
-    { transform: 'translateY(-.04em)', offset: .78 }, { opacity: 1, transform: 'none' }],
-    { duration: 900, delay: 150 + i * 55, easing: 'cubic-bezier(.3, .7, .4, 1)', fill: 'both' }));
   skjema.animate([{ transform: 'scaleX(.09)', opacity: 0 }, { transform: 'scaleX(.09)', opacity: 1, offset: .2 }, { transform: 'scaleX(1.02)', offset: .8 }, { transform: 'scaleX(1)', opacity: 1 }],
     { duration: 1100, delay: 650, easing: 'cubic-bezier(.65, 0, .35, 1)', fill: 'backwards' });
   skjema.querySelector('input').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 1500, fill: 'backwards' });

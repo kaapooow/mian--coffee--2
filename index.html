@@ -23,10 +23,9 @@
 
 
 <div class="fs">
-<!-- The page has no header in the hero: it sits in the row above section 2, comes in with it and then
-     stays at the top. It is first in the code (keyboard and screen readers) and placed after the hero with CSS.
-     Logo and menu each have a box in the page colour, like every other piece of content on the grid. -->
+<!-- One fixed grid row, revealed cell by cell as the hero gives way to section 2. -->
 <header class="site-header" id="header">
+  <div class="header-celler" id="headerCeller" aria-hidden="true"></div>
   <div class="container header-inner">
     <a class="logo hbox" id="logoBoks" href="./" aria-label="Mian Coffee, til forsiden">
       <span class="logo-ord" aria-hidden="true">Mian Coffee</span>
@@ -81,8 +80,7 @@
 
   <!-- 2. Søt, rund og laget for hverdagen -->
   <section class="sec hverdag" id="hverdag" data-tema="gronn" aria-labelledby="hverdagTittel">
-    <img class="detalj" src="assets/forside/detalj.svg" alt="" aria-hidden="true">
-    <div class="container">
+    <div class="container kort-panel">
       <div class="box head">
         <h2 class="tittel" id="hverdagTittel">Søt, rund og laget for&nbsp;hverdagen</h2>
         <p class="lead">Vi velger kaffe som smaker godt uten at du trenger å vite noe om kaffe. Sett på trakteren så har du plutselig goood kaffe.</p>
@@ -91,20 +89,22 @@
           <p class="levering"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><em>Gratis levering i Kristiansand og Søgne</em></p>
         </div>
       </div>
-      <div class="egenskaper" id="egenskaper">
-        <article class="egenskap"><h3>Fersk.</h3><p>Vi brenner kaffe i små partier, så kaffen kommer til deg kort tid etter brenning.</p></article>
-        <article class="egenskap"><h3>Balansert.</h3><p>Søt, rund og smak som passer like godt svart som med melk.</p></article>
-        <article class="egenskap"><h3>Enkel.</h3><p>Hele bønner eller filtermalt. Traktere, kokekanna eller presskanna, det funker!</p></article>
-        <img class="rom-bonne rb-1" src="assets/forside/bonne-b.webp" alt="" aria-hidden="true">
-        <img class="rom-bonne rb-2" src="assets/forside/bonne-d.webp" alt="" aria-hidden="true">
-        <img class="rom-bonne rb-3 uskarp" src="assets/forside/bonne-e.webp" alt="" aria-hidden="true">
+      <div class="kort-gruppe">
+        <div class="egenskaper" id="egenskaper">
+          <article class="egenskap"><h3>Fersk.</h3><p>Vi brenner kaffe i små partier, så kaffen kommer til deg kort tid etter brenning.</p></article>
+          <article class="egenskap"><h3>Balansert.</h3><p>Søt, rund og smak som passer like godt svart som med melk.</p></article>
+          <article class="egenskap"><h3>Enkel.</h3><p>Hele bønner eller filtermalt. Traktere, kokekanna eller presskanna, det funker!</p></article>
+          <img class="rom-bonne rb-1" src="assets/forside/bonne-b.webp" alt="" aria-hidden="true">
+          <img class="rom-bonne rb-2" src="assets/forside/bonne-d.webp" alt="" aria-hidden="true">
+          <img class="rom-bonne rb-3 uskarp" src="assets/forside/bonne-e.webp" alt="" aria-hidden="true">
+        </div>
       </div>
     </div>
   </section>
 
   <!-- 3. Noe for enhver start! Six products; the rest behind «Se alle produkter». -->
   <section class="sec produkter" id="produkter" data-tema="rosa" aria-labelledby="produkterTittel">
-    <div class="container">
+    <div class="container kort-panel">
       <div class="box head">
         <h2 class="tittel" id="produkterTittel">Noe for enhver start!</h2>
         <p class="lead">Kaffe, drips, sjokolade og gaver. Alt ordnet og pakket i Kristiansand.</p>
@@ -113,7 +113,9 @@
           <p class="levering"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.62l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg><em>Gratis levering i Kristiansand og Søgne</em></p>
         </div>
       </div>
-      <ul class="kort-liste" id="kortListe"></ul>
+      <div class="kort-gruppe">
+        <ul class="kort-liste" id="kortListe"></ul>
+      </div>
       <div class="box flere">
         <p>Se flere produkter, som drips, konfekt og gaver.</p>
         <a class="knapp knapp--svart" href="#">Se alle produkter<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
@@ -121,24 +123,15 @@
     </div>
   </section>
 
-  <!-- 4. Fra idé til kaffepose på 45 dager. The day cards float in a 3D space and follow the pointer. -->
-  <section class="sec dager midt" data-tema="bla" aria-labelledby="dagerTittel">
+  <!-- 4. Calendar hints sit in the page grid around the story. -->
+  <section class="sec dager" data-tema="bla" aria-labelledby="dagerTittel">
+    <div class="dager-celler" id="dagerCeller" aria-hidden="true"></div>
     <div class="container dager-grid">
       <div class="box head">
         <h2 class="tittel" id="dagerTittel">Fra idé til kaffepose på 45&nbsp;dager</h2>
         <p class="lead">Mian Coffee er bygget fra bunnen av, ved siden av dagjobber, familie og hverdagsliv. Tidlige morgener, sene kvelder og mye kaffetesting.</p>
         <div class="handlinger">
           <a class="knapp knapp--natt" href="om-mian/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Bli bedre kjent</a>
-        </div>
-      </div>
-      <div class="rom" id="rom" aria-label="Utdrag fra de 45 dagene">
-        <div class="rom-scene" id="romScene">
-          <figure class="dagkort dk-3" data-z="-160" aria-hidden="true"></figure>
-          <figure class="dagkort dk-2" data-z="-60" aria-hidden="true"><div class="dk-bilde" style="background-image:url(assets/forside/foto-dag1.webp)"></div></figure>
-          <figure class="dagkort dk-1" data-z="60">
-            <figcaption><b>Dag 1 · <strong>Ideen</strong></b><span>Et ønske om å bygge noe eget rundt god kaffe, her i Kristiansand</span></figcaption>
-            <div class="dk-bilde"><img src="assets/forside/foto-dag1.webp" alt="En mann sitter ved kjøkkenbordet med kaffekopp og laptop i morgenlyset" loading="lazy"></div>
-          </figure>
         </div>
       </div>
     </div>
@@ -189,6 +182,7 @@
 </div>
 
 <script src="assets/site.js"></script>
+<script src="assets/om-mian-data.js"></script>
 <script src="assets/forside.js"></script>
 </body>
 </html>
