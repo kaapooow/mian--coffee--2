@@ -71,15 +71,20 @@ function tr(p, keys) {
 const mix = (a, b, t) => a.map((v, i) => Math.round(lerp(v, b[i], t)));
 const rgb = c => `rgb(${c.join(',')})`;
 
-// Page grid. Cells are about 88 px on desktop, smaller on narrow screens (a 16th of the width, 48–88 px),
-// with a whole number of cells across both the width and the height of the viewport, so they end up as
-// square as possible. Content goes from column 2 to the column before the last; on very wide screens
-// more columns stay empty on both sides so the content is never wider than about 1280 px.
-// The header is the first row.
+// Page grid. A cell is a 16th of the width, between 24 and 88 px, with a whole number of cells across both
+// the width and the height of the viewport, so they end up as square as possible. That gives about 88 px
+// cells on desktop and about 24 px on a phone (the Figma sketches: 112 px at 1456, 24 px at 384).
+// Content goes from column 2 to the column before the last; on very wide screens more columns stay empty
+// on both sides so the content is never wider than about 1280 px.
 const root = document.documentElement;
 let PG = {};
 
-const PAD = 24;
+// Components are drawn in whole cells, but how many cells a thing needs depends on how big a cell is:
+// a header is two rows on a phone and one on desktop. These turn a size in pixels into whole cells.
+const colsFor = p => Math.max(1, Math.round(p / PG.gx));
+const rowsFor = p => Math.max(1, Math.round(p / PG.gy));
+
+let PAD = 24;                  // padding inside the boxes behind titles and leads; smaller on small cells
 
 const TOKENS = getComputedStyle(document.documentElement);
 const tok = name => { const h = TOKENS.getPropertyValue(name).trim().replace('#', ''); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
@@ -88,15 +93,18 @@ const header = document.getElementById('header');
 
 function gridCells() {
   const W = innerWidth, H = innerHeight;
-  const cols = Math.max(6, Math.round(W / Math.max(48, Math.min(88, W / 16))));
+  const cols = Math.max(6, Math.round(W / Math.max(24, Math.min(88, W / 16))));
   const gx = W / cols, rows = Math.max(4, Math.round(H / gx)), gy = H / rows;
   const m = Math.max(1, Math.ceil((cols - Math.floor(1280 / gx)) / 2));   // empty columns on each side
   const C = cols - 2 * m;
   PG = { gx, gy, cols, rows, m, C, c0: m * gx, cw: C * gx };
+  PAD = gx < 40 ? 16 : 24;
   const px = v => v + 'px';
   root.style.setProperty('--gx', px(gx)); root.style.setProperty('--gy', px(gy));
   root.style.setProperty('--c0', px(PG.c0)); root.style.setProperty('--cw', px(PG.cw));
-  root.style.setProperty('--header-h', px(gy));
+  root.style.setProperty('--pad', px(PAD));
+  // the header is as many whole rows as it takes to hold a 44 px tap target: two rows on a phone, one otherwise
+  root.style.setProperty('--header-h', px(Math.max(1, Math.ceil(44 / gy)) * gy));
   return PG;
 }
 gridCells();

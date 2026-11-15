@@ -93,11 +93,19 @@ Samtalekapittelet (04) skal føles tregt og stille.
 
 JS regner ut gridet fra viewporten (`gridCells()` i `site.js`) og setter `--gx`, `--gy`, `--c0`, `--cw`.
 
-- Rutestørrelse er omtrent bredde / 16, begrenset til 48–88 px. Mindre ruter på mobil.
+- Rutestørrelse er omtrent bredde / 16, begrenset til 24–88 px. Rutene er mindre og flere på mobil: 16 kolonner på 384 px gir 24 px ruter, som i skissen. På desktop er de 88 px.
 - `m` = antall tomme kolonner på hver side: `max(1, ceil((kolonner − floor(1280 / gx)) / 2))`. Innholdet er maks 1280 px bredt og sentrert.
 - Innholdet ligger i `.container` (`width: var(--cw)`, `margin-left: var(--c0)`).
-- Menyen følger gridet. Header-høyden er én rad (`--header-h` = `--gy`).
-- Boksen bak en tittel er hele rader høy (`headBox()`). Teksten står `--pad` (24 px) inn fra kanten og er sentrert i høyden. Rutene bak teksten ryddes med `.hole`.
+
+### Komponenter i hele ruter
+
+En komponent dekker alltid hele ruter, men hvor mange ruter den trenger kommer an på hvor store rutene er. `colsFor(px)` og `rowsFor(px)` i `site.js` gjør en størrelse i piksler om til hele ruter, så en komponent holder omtrent samme fysiske størrelse i alle bredder.
+
+- Headeren er så mange hele rader som trengs for et trykkmål på 44 px: **to rader på mobil**, én rad ellers (`--header-h`).
+- Scroll-pilen i heroen, klokken på Om MIAN og kalenderdagene i kapittel 01 regnes ut på samme måte.
+- `--pad`, avstanden fra kanten av en boks til teksten, er 16 px når rutene er mindre enn 40 px, ellers 24 px.
+- Boksen bak en tittel er hele rader høy (`headBox()`). Teksten står `--pad` inn fra kanten og er sentrert i høyden. Rutene bak teksten ryddes med `.hole`.
+- Headeren er én boks i bakgrunnsfargen over hele innholdsbredden, ikke én boks per del.
 - Kort har et indre grid av halve sidekolonner (`--sx`, `--sy`). Kort og kaffeposer kan stikke ut av rammen.
 - Hvert kapittel på Om MIAN er et helt antall rader høyt, slik at linjene løper uavbrutt. Pinnede scener gjentar gridet på seg selv, så det ikke scroller forbi.
 
