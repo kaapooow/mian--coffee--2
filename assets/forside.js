@@ -1,7 +1,7 @@
 // Forside v2, everything the front page does. Shared helpers (grid, tokens, title reveal, menu) come from site.js.
 // One scroll loop sets the live colour tokens and the hero's exit; reveals are started by IntersectionObserver;
 // the 3D cards, the newsletter cells and the bean pile run only while their section is on screen.
-// Only transform and opacity animate, except the clip-path of the intro box during the first second.
+// Card surfaces and the intro box reveal with clip-path; their content uses transform and opacity.
 
 // ------------------------------------------------------------------ themes
 // bg = page, grid = grid lines, hdr = logo and selected menu item, pill / pillFg = menu items
@@ -30,6 +30,22 @@ const heroFade = document.querySelector('.hero-fade');
 const introBox = document.getElementById('introBox');
 const fx = el => getComputedStyle(el);
 
+// The overlapping story cards use the same milestones as the Om Mian calendar.
+{
+  const milestones = window.OM_MIAN?.milepaeler ?? [];
+  const cards = [...document.querySelectorAll('.dagkort')].sort((a, b) => +b.dataset.z - +a.dataset.z);
+  cards.forEach((card, i) => {
+    const m = milestones[i];
+    if (!m) { card.remove(); return; }
+    const description = m.tekst.replace(/^Dag\s+\d+\s*,?\s*/i, '').trim();
+    const image = m.bilde ? `<img src="${m.bilde}" alt="" loading="lazy">`
+      : i === 0 ? '<img src="assets/forside/foto-dag1.webp" alt="En mann sitter ved kjøkkenbordet med kaffekopp og laptop i morgenlyset" loading="lazy">'
+      : '<div class="dk-placeholder" aria-hidden="true"></div>';
+    card.removeAttribute('aria-hidden');
+    card.innerHTML = `<figcaption><b>Dag ${m.dag}</b><span>${description || m.tekst}</span></figcaption><div class="dk-bilde">${image}</div>`;
+  });
+}
+
 // ------------------------------------------------------------------ products (six on the front page)
 const PRODUKTER = [
   { navn: 'Tjuvstart', tekst: 'Kenya · Nandi County · Medium brent. Sjokolade, sukkerrør og røde bær. 250 gram.', pris: 189, bilde: 'assets/produkter/tjuvstart-250.webp', alt: 'Kaffepose med Tjuvstart, 250 g' },
@@ -53,7 +69,7 @@ document.getElementById('kortListe').innerHTML = PRODUKTER.map((p, i) => `
     </div>
     <div class="pk-knapper">
       <a class="knapp knapp--svart" href="#">${IKON_KURV}Legg i handlekurv</a>
-      <a class="knapp knapp--svart rund" href="#" aria-label="Les mer om ${p.navn}">${IKON_PIL}</a>
+      <a class="knapp knapp--svart rund" href="#" aria-label="Les mer om ${p.navn}"><span class="pk-les-mer">Les mer</span>${IKON_PIL}</a>
     </div>
   </li>`).join('');
 document.querySelectorAll('.egenskap').forEach((e, i) => e.style.setProperty('--i', i));
@@ -66,6 +82,13 @@ let H = innerHeight, W = innerWidth;
 function snapBox(box, { full = false } = {}) {
   const g = PG;
   box.style.width = ''; box.style.height = '';
+  // Panel children inherit their width from the grid-aligned outer surface.
+  if (box.parentElement.classList.contains('kort-panel')) {
+    const r = contentRect(box), style = fx(box);
+    const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
+    box.style.height = px(Math.ceil((r.bottom - r.top + padding) / g.gy) * g.gy);
+    return;
+  }
   const b = box.getBoundingClientRect(), r = contentRect(box);
   const maxW = Math.max(g.gx, Math.floor((box.parentElement.getBoundingClientRect().right - b.left) / g.gx + .02) * g.gx);
   const w = full ? maxW : Math.min(maxW, Math.ceil((r.right - b.left + PAD) / g.gx - .02) * g.gx);
@@ -124,9 +147,12 @@ const headerCeller = document.getElementById('headerCeller');
 let headerCells = [];
 function layoutHeader() {
   const g = PG, logo = document.getElementById('logoBoks'), meny = document.getElementById('menyBoks');
-  if (headerCells.length !== g.cols) {
+  const headerRows = W < 1024 ? 3 : 1;
+  const cellCount = g.cols * headerRows;
+  header.style.setProperty('--header-rows', headerRows);
+  if (headerCells.length !== cellCount) {
     const rnd = seeded(19);
-    headerCells = Array.from({ length: g.cols }, () => {
+    headerCells = Array.from({ length: cellCount }, () => {
       const cell = document.createElement('i');
       return { cell, delay: rnd() * .72 };
     });
@@ -159,7 +185,16 @@ function layout() {
   if (W < 50 || H < 50) return false;          // hidden or not sized yet (e.g. a preview panel): wait for a resize
   gridCells();
   root.style.setProperty('--vh', px(PG.rows * PG.gy));
-  root.style.setProperty('--rows-produkt', Math.max(4, Math.round((W < 640 ? 440 : 455) / PG.gy)));
+  root.style.setProperty('--rows-produkt', Math.max(4, Math.round((W < 640 ? 440 : 455) / PG.gy)) + (W < 640 ? 1 : 2));
+  const cardCount = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
+  root.style.setProperty('--kort-antall', cardCount);
+  // Keep the arrow beside the cart whenever both buttons actually fit.
+  document.querySelectorAll('.pk-knapper').forEach(buttons => {
+    buttons.classList.remove('stablet');
+    const needed = [...buttons.children].reduce((sum, button) => sum + button.getBoundingClientRect().width, 0)
+      + parseFloat(getComputedStyle(buttons).columnGap);
+    buttons.classList.toggle('stablet', needed > buttons.getBoundingClientRect().width + .5);
+  });
   // section 5 starts a couple of columns in on wide screens, like the sketch
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
   layoutHero();
@@ -167,8 +202,15 @@ function layout() {
   // product cards come in from left to right within their row
   const kc = W >= 1024 ? 3 : W >= 640 ? 2 : 1;
   document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
+  document.querySelectorAll('.egenskap').forEach((k, i) => k.style.setProperty('--i', W < 768 ? 0 : i));
   layoutEgenskaper();
   document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .flere') }));
+  // Figma: one uninterrupted surface from the grid line, with inset cards.
+  // Snap the outer surface, rather than spreading the cards across whole grid columns.
+  document.querySelectorAll('.kort-panel').forEach(panel => {
+    panel.style.minHeight = '';
+    panel.style.minHeight = px(Math.ceil(panel.offsetHeight / PG.gy) * PG.gy);
+  });
   // sections that stand alone on one screen: the box centred on whole rows
   document.querySelectorAll('.sec.midt').forEach(s => {
     s.style.paddingTop = '';
@@ -300,11 +342,34 @@ const ioGroup = once(el => {
   if (el.matches('.egenskaper')) setTimeout(() => el.querySelectorAll('.rom-bonne').forEach(b => b.classList.add('flyter')), 2600);
   if (el.matches('.flere')) rise([...el.children], 100);
 }, { threshold: .2 });
-const ioKort = once(el => el.classList.add('inne'), { threshold: .15 });
+// Figma card-stagger-on-load: 100 ms pause, then a 1 s ease-out reveal
+// from the bottom edge. Title and body travel an extra 64 / 104 px.
+function revealCard(card) {
+  card.classList.add('inne');
+  if (REDUCE_MOTION) return;
+  const timing = { duration: 1000, delay: 100 + Number(fx(card).getPropertyValue('--i')) * 140,
+    easing: 'ease-out', fill: 'backwards' };
+  const height = card.offsetHeight - 1;
+  const animations = [card.animate([
+    { opacity: 0, clipPath: 'inset(calc(100% - 1px) 0 0)' },
+    { opacity: 1, clipPath: 'inset(0)' },
+  ], timing)];
+  [...card.children].forEach((child, i) => animations.push(child.animate([
+    { opacity: .2, transform: `translateY(${height + (i === 0 ? 64 : 104)}px)` },
+    { opacity: 1, transform: 'translateY(0)' },
+  ], timing)));
+  // Keyboard focus must immediately expose the card's actions.
+  const finish = () => animations.forEach(animation => animation.finish());
+  card.addEventListener('focusin', finish, { once: true });
+  Promise.all(animations.map(animation => animation.finished)).then(() => {
+    card.removeEventListener('focusin', finish);
+  });
+}
+const ioKort = once(revealCard, { threshold: .15 });
 if (!REDUCE_MOTION) document.querySelectorAll('.sec:not(.hero) .head .tittel').forEach(t => hideTitle(t));
 document.querySelectorAll('.sec:not(.hero) .head').forEach(h => ioHead.observe(h));
 document.querySelectorAll('.egenskaper, .rom, .flere').forEach(g => ioGroup.observe(g));
-document.querySelectorAll('.pkort').forEach(k => ioKort.observe(k));
+document.querySelectorAll('.egenskap, .pkort').forEach(k => ioKort.observe(k));
 once(() => haugFall(), { threshold: .3 }).observe(document.querySelector('.fot'));
 
 // ------------------------------------------------------------------ 4. cards in a 3D space, following the pointer
