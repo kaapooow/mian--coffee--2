@@ -147,8 +147,9 @@ const headerCeller = document.getElementById('headerCeller');
 let headerCells = [];
 function layoutHeader() {
   const g = PG, logo = document.getElementById('logoBoks'), meny = document.getElementById('menyBoks');
-  const headerRows = W < 1024 ? 3 : 1;
-  const cellCount = g.cols * headerRows;
+  const headerRows = W < 1024 ? 2 : 1;
+  const headerCols = W < 1024 ? g.cols : g.C;
+  const cellCount = headerCols * headerRows;
   header.style.setProperty('--header-rows', headerRows);
   if (headerCells.length !== cellCount) {
     const rnd = seeded(19);
@@ -157,7 +158,7 @@ function layoutHeader() {
       return { cell, delay: rnd() * .72 };
     });
     headerCeller.replaceChildren(...headerCells.map(({ cell }) => cell));
-    header.style.setProperty('--header-cols', g.cols);
+    header.style.setProperty('--header-cols', headerCols);
   }
   if (W < 1024) {
     logo.style.width = '';
