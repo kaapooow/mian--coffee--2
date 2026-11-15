@@ -1,6 +1,6 @@
 // Forside v2, everything the front page does. Shared helpers (grid, tokens, title reveal, menu) come from site.js.
 // One scroll loop sets the live colour tokens and the hero's exit; reveals are started by IntersectionObserver;
-// the 3D cards, the newsletter cells and the bean pile run only while their section is on screen.
+// calendar hints reveal on scroll; newsletter cells and the bean pile animate in their sections.
 // Card surfaces and the intro box reveal with clip-path; their content uses transform and opacity.
 
 // ------------------------------------------------------------------ themes
@@ -29,22 +29,6 @@ const heroPil = document.getElementById('heroPil');
 const heroFade = document.querySelector('.hero-fade');
 const introBox = document.getElementById('introBox');
 const fx = el => getComputedStyle(el);
-
-// The overlapping story cards use the same milestones as the Om Mian calendar.
-{
-  const milestones = window.OM_MIAN?.milepaeler ?? [];
-  const cards = [...document.querySelectorAll('.dagkort')].sort((a, b) => +b.dataset.z - +a.dataset.z);
-  cards.forEach((card, i) => {
-    const m = milestones[i];
-    if (!m) { card.remove(); return; }
-    const description = m.tekst.replace(/^Dag\s+\d+\s*,?\s*/i, '').trim();
-    const image = m.bilde ? `<img src="${m.bilde}" alt="" loading="lazy">`
-      : i === 0 ? '<img src="assets/forside/foto-dag1.webp" alt="En mann sitter ved kjøkkenbordet med kaffekopp og laptop i morgenlyset" loading="lazy">'
-      : '<div class="dk-placeholder" aria-hidden="true"></div>';
-    card.removeAttribute('aria-hidden');
-    card.innerHTML = `<figcaption><b>Dag ${m.dag}</b><span>${description || m.tekst}</span></figcaption><div class="dk-bilde">${image}</div>`;
-  });
-}
 
 // ------------------------------------------------------------------ products (six on the front page)
 const PRODUKTER = [
@@ -86,7 +70,8 @@ function snapBox(box, { full = false } = {}) {
   if (box.parentElement.classList.contains('kort-panel')) {
     const r = contentRect(box), style = fx(box);
     const padding = parseFloat(style.paddingTop) + parseFloat(style.paddingBottom);
-    box.style.height = px(Math.ceil((r.bottom - r.top + padding) / g.gy) * g.gy);
+    // Geometry stays on the grid; CSS insets the background, not the container.
+    box.style.height = px(Math.ceil((r.bottom - r.top + padding + 1) / g.gy) * g.gy);
     return;
   }
   const b = box.getBoundingClientRect(), r = contentRect(box);
@@ -198,6 +183,7 @@ function layout() {
   });
   // section 5 starts a couple of columns in on wide screens, like the sketch
   root.style.setProperty('--fersk-inn', W >= 1024 ? Math.min(2, Math.floor((PG.C - 8) / 2)) : 0);
+  root.style.setProperty('--dager-cols', W >= 1024 ? Math.max(4, Math.round(PG.C * 5 / 11)) : PG.C);
   layoutHero();
   layoutHeader();
   // product cards come in from left to right within their row
@@ -205,21 +191,20 @@ function layout() {
   document.querySelectorAll('.pkort').forEach((k, i) => k.style.setProperty('--i', i % kc));
   document.querySelectorAll('.egenskap').forEach((k, i) => k.style.setProperty('--i', W < 768 ? 0 : i));
   layoutEgenskaper();
-  document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .flere') }));
-  // Figma: one uninterrupted surface from the grid line, with inset cards.
-  // Snap the outer surface, rather than spreading the cards across whole grid columns.
-  document.querySelectorAll('.kort-panel').forEach(panel => {
-    panel.style.minHeight = '';
-    panel.style.minHeight = px(Math.ceil(panel.offsetHeight / PG.gy) * PG.gy);
+  document.querySelectorAll('.sec:not(.hero) .box').forEach(b => snapBox(b, { full: b.matches('.nyhet .head, .dager .head, .flere') }));
+  // Keep every container on whole rows; inset backgrounds expose the grid.
+  document.querySelectorAll('.kort-gruppe').forEach(group => {
+    group.style.minHeight = '';
+    group.style.minHeight = px(Math.ceil((group.getBoundingClientRect().height + 1) / PG.gy) * PG.gy);
   });
   // sections that stand alone on one screen: the box centred on whole rows
   document.querySelectorAll('.sec.midt').forEach(s => {
     s.style.paddingTop = '';
-    if (W < 1024 && s.classList.contains('dager')) return;
     const box = s.querySelector('.head'), rows = Math.round(box.getBoundingClientRect().height / PG.gy);
     s.style.paddingTop = px(Math.max(1, Math.floor((PG.rows - rows) / 2)) * PG.gy);
   });
   // every section a whole number of rows high, so the grid lines run on unbroken
+  dagerSec.style.height = '';
   secs.forEach(s => {
     if (s === hero) return;
     s.style.minHeight = '';
@@ -228,6 +213,7 @@ function layout() {
   });
   layoutCeller();
   layoutHaug();
+  layoutDager();
   measure();
   update();
   return true;
@@ -369,43 +355,63 @@ function revealCard(card) {
 const ioKort = once(revealCard, { threshold: .15 });
 if (!REDUCE_MOTION) document.querySelectorAll('.sec:not(.hero) .head .tittel').forEach(t => hideTitle(t));
 document.querySelectorAll('.sec:not(.hero) .head').forEach(h => ioHead.observe(h));
-document.querySelectorAll('.egenskaper, .rom, .flere').forEach(g => ioGroup.observe(g));
+document.querySelectorAll('.egenskaper, .flere').forEach(g => ioGroup.observe(g));
 document.querySelectorAll('.egenskap, .pkort').forEach(k => ioKort.observe(k));
 once(() => haugFall(), { threshold: .3 }).observe(document.querySelector('.fot'));
 
-// ------------------------------------------------------------------ 4. cards in a 3D space, following the pointer
-{
-  const sec = document.querySelector('.dager'), scene = document.getElementById('romScene');
-  const cards = [...scene.querySelectorAll('.dagkort')].map(el => ({ el, z: +el.dataset.z }));
-  const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
-  let tx = 0, ty = 0, cx = 0, cy = 0, on = false, raf = 0, t0 = performance.now();
-  if (!REDUCE_MOTION) {
-    sec.addEventListener('pointermove', e => {
-      if (e.pointerType !== 'mouse') return;
-      const r = scene.getBoundingClientRect();
-      tx = clamp((e.clientX - (r.left + r.width / 2)) / (r.width * .8), -1, 1);
-      ty = clamp((e.clientY - (r.top + r.height / 2)) / (r.height * .8), -1, 1);
-    });
-    sec.addEventListener('pointerleave', () => { tx = ty = 0; });
-    const tick = now => {
-      if (!fine) {   // touch: the scene tilts as the section scrolls past
-        const r = sec.getBoundingClientRect();
-        tx = clamp((H / 2 - (r.top + r.height / 2)) / H, -1, 1) * .8; ty = tx * -.5;
-      }
-      cx = lerp(cx, tx, .07); cy = lerp(cy, ty, .07);
-      const s = (now - t0) / 1000;
-      scene.style.setProperty('--ry', (cx * 12 + Math.sin(s * .6) * 1.6).toFixed(2) + 'deg');
-      scene.style.setProperty('--rx', (-cy * 9 + Math.cos(s * .5) * 1.2).toFixed(2) + 'deg');
-      cards.forEach(({ el, z }, i) => {
-        const d = (z + 200) / 260;                         // nearer cards move more
-        el.style.setProperty('--tx', (cx * 26 * d).toFixed(1) + 'px');
-        el.style.setProperty('--ty', (cy * 18 * d + Math.sin(s * .9 + i * 1.7) * 6).toFixed(1) + 'px');
-        el.style.setProperty('--tz', z + 'px');
-      });
-      raf = on ? requestAnimationFrame(tick) : 0;
-    };
-    new IntersectionObserver(([e]) => { on = e.isIntersecting; if (on && !raf) raf = requestAnimationFrame(tick); }).observe(sec);
-  } else cards.forEach(({ el, z }) => el.style.setProperty('--tz', z + 'px'));
+// ------------------------------------------------------------------ 4. calendar positions from Figma 481:15008
+const dagerSec = document.querySelector('.dager');
+const dagerLag = document.getElementById('dagerCeller');
+const DAGER_POSISJONER = [
+  [3, 1], [5, 1], [7, 2], [9, 3], [11, 3],
+  [7, 5], [8, 5], [10, 5], [7, 6],
+  [8, 7], [10, 7], [12, 7], [11, 8],
+];
+let dagerCeller = [], dagerLayout = '';
+function layoutDager() {
+  const { gx, gy, cols, m } = PG;
+  dagerSec.style.height = '';
+  const section = dagerSec.getBoundingClientRect();
+  const head = dagerSec.querySelector('.head').getBoundingClientRect();
+  const headCols = Math.round(head.width / gx);
+  const headTop = Math.round((head.top - section.top) / gy);
+  const bottom = Math.round((head.bottom - section.top) / gy);
+  const wide = W >= 1024;
+  // Anchor the reference's column 1 to the content edge and column 6 to the
+  // text box's right edge; the last column remains at the viewport edge.
+  const column = c => c <= 6
+    ? m + Math.round((c - 1) * headCols / 5)
+    : m + headCols + Math.round((c - 6) * (cols - 1 - m - headCols) / 6);
+  const chosen = DAGER_POSISJONER.map(([c, r], i) => {
+    if (!wide) {
+      // On narrow screens the text spans the content width. Keep 1–2 above
+      // it and arrange the remaining numbers in fixed rows below it.
+      return i < 2
+        ? { col: m + Math.round((i + 1) * (PG.C - 1) / 3), row: headTop - 1 }
+        : { col: m + (i - 2) % PG.C, row: bottom + Math.floor((i - 2) / PG.C) };
+    }
+    return { col: column(c), row: r < 7 ? headTop + r - 2 : Math.max(bottom, headTop + 5) + r - 7 };
+  });
+  const rows = Math.max(...chosen.map(p => p.row)) + 1;
+  dagerSec.style.height = px(Math.max(section.height, rows * gy));
+  const key = [cols, headTop, bottom, headCols, gx, gy, wide].join(':');
+  if (key === dagerLayout) return;
+  dagerLayout = key;
+  const revealed = new Set(dagerCeller.filter(d => d.el.classList.contains('inne')).map(d => d.day));
+  dagerCeller.forEach(({ el }) => ioKort.unobserve(el));
+  dagerCeller = chosen.map(({ col, row }, i) => {
+    const el = document.createElement('div'), day = i + 1;
+    el.className = 'dag-celle';
+    el.innerHTML = `<span>${day}</span>`;
+    const stagger = chosen.slice(0, i).filter(p => p.row === row).length;
+    el.style.cssText = `left:${col * gx + 1}px;top:${row * gy + 1}px;width:${gx - 1}px;height:${gy - 1}px;--i:${stagger}`;
+    if (REDUCE_MOTION || revealed.has(day)) el.classList.add('inne');
+    return { el, day, row };
+  });
+  dagerLag.replaceChildren(...dagerCeller.map(d => d.el));
+  dagerCeller.forEach(({ el }) => {
+    if (!el.classList.contains('inne')) ioKort.observe(el);
+  });
 }
 
 // ------------------------------------------------------------------ 6. newsletter: lit grid cells, title reveal, opening field
