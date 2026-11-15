@@ -64,7 +64,10 @@ body { background: var(--bg); color: var(--white); }
    sticks to the top. It is one box in the page colour across the content columns, so the grid is cleared
    behind it like behind every title and lead. Two rows tall on a phone, one row on desktop. */
 .site-header { position: sticky; inset: 0 auto auto; top: 0; order: 1; z-index: 40; height: var(--header-h); color: var(--hdr); pointer-events: none; }
-.header-inner { height: 100%; padding-inline: var(--pad); gap: 16px; background: var(--bg); pointer-events: auto; }
+.header-celler { position: absolute; left: var(--c0); top: 0; width: var(--cw); height: 100%; overflow: hidden; pointer-events: none; }
+.h-cel { position: absolute; background: var(--bg); opacity: 0; }
+.header-inner { position: relative; height: 100%; padding-inline: var(--pad); gap: 16px; pointer-events: auto; }
+.site-header.visible .header-inner { background: var(--bg); }
 .hbox { position: relative; display: flex; align-items: center; }
 .logo { height: auto; gap: 0; }
 .logo .logo-ord { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 2.9vw, 42px); line-height: .9; white-space: nowrap;

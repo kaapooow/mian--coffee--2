@@ -30,6 +30,30 @@ const heroFade = document.querySelector('.hero-fade');
 const introBox = document.getElementById('introBox');
 const fx = el => getComputedStyle(el);
 
+// ------------------------------------------------------------------ header: cell-by-cell background
+// The header has no background of its own until it scrolls in: the grid behind it is cleared one cell at a
+// time as section 2 arrives, the same way other backed content blocks out the grid. Each cell's delay is
+// picked once (stable), so scrolling back up reverses the reveal without reshuffling.
+const headerCeller = document.getElementById('headerCeller');
+let headerCells = [];
+function layoutHeaderCeller() {
+  const g = PG, hh = parseFloat(getComputedStyle(root).getPropertyValue('--header-h')) || g.gy;
+  const cols = Math.max(1, g.C), rows = Math.max(1, Math.round(hh / g.gy));
+  if (headerCells.length !== cols * rows) {
+    headerCeller.textContent = ''; headerCells = [];
+    const f = document.createDocumentFragment();
+    for (let i = 0; i < cols * rows; i++) {
+      const cell = document.createElement('i'); cell.className = 'h-cel'; f.append(cell);
+      headerCells.push({ cell, delay: Math.random() * .7 });
+    }
+    headerCeller.append(f);
+  }
+  headerCells.forEach(({ cell }, i) => {
+    const c = i % cols, r = Math.floor(i / cols);
+    cell.style.cssText = `left:${c * g.gx + 1}px;top:${r * g.gy + 1}px;width:${g.gx - 1}px;height:${g.gy - 1}px`;
+  });
+}
+
 // ------------------------------------------------------------------ products (six on the front page)
 const PRODUKTER = [
   { navn: 'Tjuvstart', tekst: 'Kenya · Nandi County · Medium brent. Sjokolade, sukkerrør og røde bær. 250 gram.', pris: 189, bilde: 'assets/produkter/tjuvstart-250.webp', alt: 'Kaffepose med Tjuvstart, 250 g' },
@@ -172,6 +196,7 @@ function layout() {
     const h = s.getBoundingClientRect().height;
     s.style.minHeight = px(Math.ceil(h / PG.gy - .02) * PG.gy);
   });
+  layoutHeaderCeller();
   layoutCeller();
   layoutHaug();
   layoutDager();
