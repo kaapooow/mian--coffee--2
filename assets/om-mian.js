@@ -346,7 +346,10 @@
   }
   const queue = () => { if (!queued) { queued = true; requestAnimationFrame(update); } };
   addEventListener('scroll', queue, { passive: true });
-  addEventListener('resize', layout);
+  // A phone's browser chrome hiding and showing as you scroll fires a resize too, but only the height
+  // moves. Nothing should change size from that, so only a real width change re-measures the layout.
+  let lastW = innerWidth;
+  addEventListener('resize', () => { if (innerWidth !== lastW) { lastW = innerWidth; layout(); } });
   document.fonts && document.fonts.ready.then(layout);
 
   // titles fly in letter by letter the first time a chapter comes into view (as on the front page)

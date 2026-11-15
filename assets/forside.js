@@ -246,8 +246,14 @@ function update() {
 }
 let ticking = false;
 addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { ticking = false; update(); }); } }, { passive: true });
-let rz;
-addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(layout, 120); });
+// Re-measure on a real resize only: a phone's browser chrome hiding and showing as you scroll fires a resize
+// too, but only the height moves, and nothing (least of all the hero title) should change size from that.
+let rz, lastW = innerWidth;
+addEventListener('resize', () => {
+  if (innerWidth === lastW) return;
+  lastW = innerWidth;
+  clearTimeout(rz); rz = setTimeout(layout, 120);
+});
 
 // ------------------------------------------------------------------ intro
 // The logo comes calmly in, in its box in the middle. It glides up and out while the box opens into the
