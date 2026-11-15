@@ -70,14 +70,7 @@ body { background: var(--bg); color: var(--white); }
 .site-header.visible .header-inner { background: var(--bg); }
 .hbox { position: relative; display: flex; align-items: center; }
 .logo { height: auto; gap: 0; }
-.logo .logo-ord { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 2.9vw, 42px); line-height: .9; white-space: nowrap;
-            transition: opacity .35s ease, transform .5s cubic-bezier(.22, 1, .36, 1); }
-.logo-mark { position: absolute; left: 0; top: 50%; display: block; width: 50px; height: 40px; margin-top: -20px; opacity: 0; transform: translateY(10px);
-             transition: opacity .35s ease, transform .5s cubic-bezier(.22, 1, .36, 1); }
-/* stuck to the top: the wordmark gives way to the mark */
-.site-header.fast .logo-ord { opacity: 0; transform: translateY(-10px); }
-.site-header.fast .logo-mark { opacity: 1; transform: none; }
-@media (max-width: 639px) { .logo-mark { width: 40px; height: 32px; margin-top: -16px; } }
+.logo .logo-ord { font-family: var(--display); font-weight: 400; font-size: clamp(22px, 2.9vw, 42px); line-height: .9; white-space: nowrap; }
 @media (min-width: 1024px) {
   .nav { gap: clamp(8px, 1.3vw, 24px); }
   .nav a { background: var(--pill-bg); color: var(--pill-fg); min-height: 32px; padding: 4px 10px; font-size: clamp(15px, 1.25vw, 18px); }
@@ -279,5 +272,5 @@ body { background: var(--bg); color: var(--white); }
   .hb, .hero-pil svg, .rom-bonne { animation: none !important; }
   .egenskap, .pkort, .rom-bonne, .dagkort { opacity: 1 !important; transform: none; transition: none !important; }
   .rom-bonne { opacity: var(--o, 1) !important; transform: rotate(var(--r0)) !important; }
-  .logo-ord, .logo-mark, .knapp, .pk-bilde img, .epost button { transition: none; }
+  .knapp, .pk-bilde img, .epost button { transition: none; }
 }
